@@ -7,20 +7,21 @@ Created on Nov 2, 2014
 class Packet():
     
     def __init__(self, sourcePort=12000, destinationPort=12000, sequenceNumber=0, acknowledgmentNumber=0, 
-                 window=10, checksum=None, crtlBits=0x000, offset=None, options=None, padding=None, data=None):
+                 window=10, ctrlBits=0x0, options=None, data=None):
         self.sourcePort = sourcePort
         self.destinationPort = destinationPort
-        self.sequenceNumber = sequenceNumber
-        self.acknowlgmentNumber = acknowledgmentNumber
         self.window = window
-        self.checksum = checksum
-        self.crtlBits = crtlBits
-        self.offset = offset
+        self.ctrlBits = ctrlBits
         self.options = options
-        self.padding = padding
         self.data = data
+        # todo these needs to happen automatically based on data
+        self.sequenceNumber = sequenceNumber #this should be either automatic (smarter than default 0) or set by param
+        self.acknowlgmentNumber = acknowledgmentNumber #this should be either automatic (smarter than default 0) or set by param
+        self.checksum = checksum
+        self.offset = offset
+        self.padding = padding 
         
-        #Note, only crtlBits are stored as bits on Nov 2. This will likely change.
+    #todo function that allows cast of string to this datatype Packet(string) where that parses into all relevant datatypes so I can do pkt.data, pkt.ctrlBits, etc.
 
 ##
 # Main test function
