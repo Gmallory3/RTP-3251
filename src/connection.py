@@ -2,49 +2,69 @@
 # @author aashish9patel
 # @version 0.10a
 
-import socket
+import socket, time
 from packet import Packet
 
 class Connection():
 
 	def __init__(self, _debug=True):
 		self._debug = _debug
-		self.destipaddr = '0.0.0.0'
-		self.destport = -1
-		self.srcaddr = ''
-		self.srcport = -1
+		self.destaddr = ('', -1)
+		self.srcaddr = ('', -1)
 		self.timeout = 1000
 
-	def open(self, port, ipaddr='0.0.0.0', timeout=1000):
-		self.port = port
+	def open(self, port, addr=('',12000), timeout=1000):
+		self.srcaddr = (self.srcaddr[0], port)
 		self.timeout = timeout
+		pkt = Packet()
 		# server
-		if(ipaddr != '0.0.0.0'):
-			self.destipaddr = ipaddr
+		if(addr == ('',12000)):
+			self.destaddr = ('', -1)
 			sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			sock.bind((self.srcport, self.port))
-			# listen
+			sock.bind(self.srcaddr)
+			# listen 
+			#todo move this to a thread
 			while 1:
 				data, addr = sock.recvfrom(160)
 				if(Packet(data).crtlBits == 0x4): break
-			pkt = Packet(srcport, destport, crtlBits=0xC)
-			send(pkt)
-			# return but keep a thread alive listening for 0x4 because this indicates need to resend 0xC
-			# only kill when data start getting recv'd
-			self.destipaddr = addr
-			self.destport = ??????
+			tcount = 0
+			while (pkt.data == None || pkt.crtlBits != 0x8):
+				pkt = Packet(self.srcaddr[1], self.destaddr[1], crtlBits=0xC)
+				send(pkt)
+				t = time.clock()
+				tcount++
+				while (time.clock() - t < timeout):
+					data, addr = sock.recvfrom(160)
+					if(data != None):
+						pkt = Packet(data)
+						break
+				if(tcount > 5):
+					if (self._debug): print 'tcount exceeded 5'
+					print 'Handshake failure! Terminating connection'
+					return None
+			self.destaddr = addr
 			return self
 		# client
 		else:
-			pkt = Packet(srcport, destport,crtlBits=0x4)
-			send(pkt)
-			#start listener
-			#start timer
-			#if no response or response!=0xc resend; reset timer
-			#repeat x3
-			#if fail, indicate handshake fail
-			#else
-			pkt = Packet(srcport, destport,crtlBits=0x8)
+			self.destaddr = addr
+			sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			sock.bind(self.srcaddr)
+			tcount = 0
+			while (pkt.crtlBits != 0xC):
+				pkt = Packet(self.srcaddr[1], self.destaddr[1], crtlBits=0x4)
+				send(pkt)
+				t = time.clock()
+				tcount++
+				while(time.clock() - t < timeout):
+					data, addr = sock.recvfrom(160)
+					if(data != None):
+						pkt = Packet(data)
+						break
+				if(tcount > 5):
+					if (self._debug): print 'tcount exceeded 5'
+					print 'Handshake failure! Terminating connection'
+					return None
+			pkt = Packet(self.srcaddr[1], destport,crtlBits=0x8)
 			send(pkt)
 			# return but keep a thread alive listening for 0xC because this indicates need to resend 0x8
 			# only kill when data start getting ack'd
