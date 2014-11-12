@@ -12,12 +12,13 @@ class Connection():
 		self.destaddr = ('', -1)
 		self.srcaddr = ('', -1)
 		self.timeout = 1000
+		self.processes = [(None, None), ]
 
 	def open(self, port, addr=('',12000), timeout=1000):
-		self.srcaddr = (self.srcaddr[0], port)
+		self.srcaddr = (addr[0], port)
 		self.timeout = timeout
 		pkt = Packet()
-		# server
+		# server (should be listening, spawn processes based on connection requests)
 		if(addr == ('',12000)):
 			self.destaddr = ('', -1)
 			sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -28,14 +29,14 @@ class Connection():
 				data, addr = sock.recvfrom(160)
 				if(Packet(data).crtlBits == 0x4): break
 			tcount = 0
-			while (pkt.data == None || pkt.crtlBits != 0x8):
+			while (pkt.crtlBits != 0x8):
 				pkt = Packet(self.srcaddr[1], self.destaddr[1], crtlBits=0xC)
 				send(pkt)
 				t = time.clock()
 				tcount++
 				while (time.clock() - t < timeout):
 					data, addr = sock.recvfrom(160)
-					if(data != None):
+					if(data != None && Packet(data).crtlBits == 0x8):
 						pkt = Packet(data)
 						break
 				if(tcount > 5):
@@ -68,6 +69,7 @@ class Connection():
 			send(pkt)
 			# return but keep a thread alive listening for 0xC because this indicates need to resend 0x8
 			# only kill when data start getting ack'd
+
 			return self
 
 
