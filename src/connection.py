@@ -20,6 +20,7 @@ class Connection():
 
 	def open(self, port, addr=('',12000), timeout=1000):
 		self.srcaddr = (self.addr[0], port)
+		self.srcaddr = (addr[0], port)
 		self.timeout = timeout
 		pkt = Packet()
 		# server
@@ -143,7 +144,6 @@ class Connection():
 			print ("euler: " + euler)
 			print ("e: " + e)
 			print ("d: " + d)
-			
 		return publicKey
 	
 	#####
