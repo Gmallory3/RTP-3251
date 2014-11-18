@@ -20,7 +20,7 @@ class Connection():
 
 	def open(self, port, addr=('',12000), timeout=1000):
 		self.srcaddr = (self.addr[0], port)
-		self.srcaddr = (addr[0], port)
+  	self.srcaddr = (addr[0], port)
 		self.timeout = timeout
 		pkt = Packet()
 		# server
@@ -38,7 +38,7 @@ class Connection():
 				pkt = Packet(self.srcaddr[1], self.destaddr[1], crtlBits=0xC)
 				self.send(pkt)
 				t = time.clock()
-				tcount++
+				tcount = tcount + 1
 				while (time.clock() - t < timeout):
 					data, addr = sock.recvfrom(160)
 					if(data != None):
@@ -60,7 +60,7 @@ class Connection():
 				pkt = Packet(self.srcaddr[1], self.destaddr[1], crtlBits=0x4)
 				self.send(pkt)
 				t = time.clock()
-				tcount++
+				tcount = tcount + 1
 				while(time.clock() - t < timeout):
 					data, addr = sock.recvfrom(160)
 					if(data != None):
@@ -70,7 +70,7 @@ class Connection():
 					if (self._debug): print 'tcount exceeded 5'
 					print 'Handshake failure! Terminating connection'
 					return None
-			pkt = Packet(self.srcaddr[1], destport,crtlBits=0x8)
+			pkt = Packet(self.srcaddr[1], self.destport,crtlBits=0x8)
 			self.send(pkt)
 			# return but keep a thread alive listening for 0xC because this indicates need to resend 0x8
 			# only kill when data start getting ack'd
@@ -114,11 +114,11 @@ class Connection():
 			while True:
 				p = random.randrange(1000000, 999999999, 2)
 				if all(p % n != 0 for n in range(3, int((math.sqrt(p) + 1), 2))):
-					break:
+					break
 			while True:
 				q = random.randrange(1000000, 999999999, 2)
 				if all(q % n != 0 for n in range(3, int((math.sqrt(q) + 1), 2))):
-					break:
+					break
 		
 		# 2: Compute n = p*q
 		n = p*q
@@ -132,7 +132,7 @@ class Connection():
 			if all(e % n != 0 for n in range(3, int((math.sqrt(e) + 1), 2))):
 				# e is prime. now if e is not divisor of 3120, we're good.
 				if (euler%e == 0):
-					break:		
+					break
 		
 		# 5: Determine d =- e^-1 mod(euler) (I.e. solve d * e =- 1(mod(euler))
 		d = self.modinv(e, euler)
