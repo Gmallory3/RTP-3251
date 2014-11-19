@@ -1,35 +1,30 @@
-# Test class
-# @author aashish9patel
-# @version 0.10
+'''
+Created on Nov 17, 2014
 
-from connection import Connection
-from packet import Packet
+@author: Garrett
+'''
 
-def client():
-    clientConn = Connection()
-    clientConn.open(12000, '127.0.0.1')
-    while 1:
-        clientConn.send(input('>>'));
-
-def server():
-    serverConn = Connection()
-    serverConn.open(12000)
-    serverConn.receive()
+import main
 
 
-if __name__ == '__main__':
-    print ("main")
+class application(object):
+    '''  
+    Used for testing the methods that will be available via the RTP-3251 API
+    '''
+
+
+    def __init__(self, params):
+        '''
+        Constructor
+        '''
     
-    inp = int(input('0:Client or 1:server = '))
-    if (inp == 0):
-      client()
-    elif (inp == 1):
-      server()
-    else:
-      print ("Invalid Input.")
+    def connectAsClient(self, portOfClient=12000, destIp="143.215.129.100", destPort=7000):
+      main.client(portOfClient, destIp, destPort)
       
-      
-#Server commands
+    def listenAsServer(self, portOfServer=12000, destIp="143.215.129.100", destPort=7000):
+      main.server(portOfServer, destIp, destPort)
+    
+    #Server commands
     def setWindow(self, size):
       #Command:     window W (only for projects that support pipelined and bi-directional transfers)
       # W: the maximum receiver’s window-size at the FTA-Server (in segments).
