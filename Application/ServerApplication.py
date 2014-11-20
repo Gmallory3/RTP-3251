@@ -7,7 +7,7 @@ Created on Nov 17, 2014
 import main
 
 
-class application(object):
+class ServerApplication(object):
     '''  
     Used for testing the methods that will be available via the RTP-3251 API
     '''
@@ -25,6 +25,7 @@ class application(object):
       main.server(portOfServer, destIp, destPort)
     
     #Server commands
+    """ eliminate"""
     def setWindow(self, size):
       #Command:     window W (only for projects that support pipelined and bi-directional transfers)
       # W: the maximum receiver’s window-size at the FTA-Server (in segments).
