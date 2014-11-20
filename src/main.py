@@ -13,7 +13,7 @@ def client():
 
 def server():
     serverConn = Connection()
-    serverConn.open(12000)
+    serverConn.open(12001)
     serverConn.receive()
 
 
