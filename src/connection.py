@@ -51,6 +51,7 @@ class Connection():
 				return None
 		pkt = Packet(self.srcaddr[1], self.destport,crtlBits=0x8)
 		self.send(pkt)
+		# KEEP the process running to keep the connection alive - just send or receive across the packet manager
 		# return but keep a thread alive listening for 0xC because this indicates need to resend 0x8
 		# only kill when data start getting ack'd
 		
@@ -128,3 +129,10 @@ class ServerManager():
 	def kill(idx):
 		self.addrlist.remove(idx)
 		self.plist[idx].terminate()
+
+
+def MSS():
+	t = time.clock()
+	#send packet
+	#waiting for ACK
+	window = (time.clock() - t)
