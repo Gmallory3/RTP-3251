@@ -14,10 +14,9 @@ class Connection():
 		self._debug = _debug
 		self.destaddr = ('', -1)
 		self.srcaddr = ('', -1)
-		self.timeout = 1000
-
-		#server vars
-		self.servermanager = None
+		self.sockettimeout = 1  #in FREAKING SECONDS!!
+		self.timeout = 1 # IN SECONDS AS WELL
+		self.pacman = None
 
 	# Generic open connection
 	def open(self, port, addr=('',12000), timeout=1000):
@@ -30,149 +29,142 @@ class Connection():
 		self.timeout = timeout
 		# server
 		if(addr == ('',12000)):
-			self.servermanager = ServerManager(port)
+			Process(target=self.open_server, args=(port, )).start()
 			return
 		# client
 		else:
 			Process(target=self.open_client, args=(port, addr)).start()
 			return
 
+	def send(self, obj):
+		self.pacman.addOutgoing(data=obj)
+
+
 	# Start the client connection
 	def open_client(self, port, addr):
-		print ('YOLO')
 		self.srcaddr = (self.srcaddr[0], port)
 		self.destaddr = addr
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		sock.settimeout(self.sockettimeout)
 		sock.bind(self.srcaddr)
-		pacman = PacketManager(self.srcaddr[1], self.destaddr[1])
-		pacman.addOutgoing(ctrlBits=0x4)
-		while(len(pacman.outgoingBFR) > 0):
-			sock.sendto(pacman.outgoingBFR[0][0], self.destaddr)
-			pacman.outgoingBFR[0] = (pacman.outgoingBFR[0][0], time.clock(), pacman.outgoingBFR[0][2]+1)
-			if(pacman.outgoingBFR[0][2] > 5):
+		self.pacman = PacketManager(self.srcaddr[1], self.destaddr[1])
+		self.pacman.addOutgoing(ctrlBits=0x4)
+		while(len(self.pacman.outgoingBFR) > 0):
+			sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
+			if(self._debug): print ('OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
+			self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
+			if(self.pacman.outgoingBFR[0][2] > 5):
 				if (self._debug):
 					print ('send count exceeded 5')
 					print ('Handshake failure! Terminating connection')
 				return
-			print 'LENGTH', len(pacman.outgoingBFR)
-			while(time.clock() - pacman.outgoingBFR[0][1] < self.timeout):
-				data, addr = sock.recvfrom(160)
+			while(time.clock() - self.pacman.outgoingBFR[0][1] < self.timeout):
+				try:
+					data, addr = sock.recvfrom(160)
+				except socket.timeout:
+					pass
+				
 				if(addr == self.destaddr and data != None):
-					if(self._debug): print ('INCOMING', pacman.stringToPacket(data).ctrlBits)
-					if(pacman.stringToPacket(data).ctrlBits == 0xC):
-						pacman.outgoingBFR.pop(0)
+					if(self._debug): print ('INCOMING', self.pacman.stringToPacket(data).ctrlBits)
+					if(self.pacman.stringToPacket(data).ctrlBits == 0xC):
+						self.pacman.outgoingBFR.pop(0)
 						break
-		pacman.addOutgoing(ctrlBits=0x8)
-		print 'LENGTH', len(pacman.outgoingBFR)
-		self.KeepAlive(sock, pacman)
+
+		self.pacman.addOutgoing(ctrlBits=0x8)
+		sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
+		if(self._debug): print ('OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
+		self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
+		self.KeepAlive(sock)
 		
 
-	def open_server(self, port):#, proc_addr):
+	def open_server(self, port):
 		self.srcaddr = (self.srcaddr[0], port)
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		sock.settimeout(self.sockettimeout)
 		sock.bind(self.srcaddr)
-		pacman = PacketManager(-1, -1)
+		self.pacman = PacketManager(-1, -1)
 		# listen 
 		while 1:
-			data, addr = sock.recvfrom(160)
-			pkt = pacman.stringToPacket(data)
-			if((pkt.ctrlBits == 0x4)): #and (addr not in proc_addr)):
-				break
-		
-		#proc_addr.append(addr)
-		self.destaddr = addr;
-		#self.servermanager.spawn()
+			try:
+				data, addr = sock.recvfrom(160)
+				pkt = self.pacman.stringToPacket(data)
+				if((pkt.ctrlBits == 0x4)):
+					if(self._debug): print ('INCOMING', pkt.ctrlBits)
+					break
+			except socket.timeout:
+				pass
 
-		pacman.sourcePort = self.srcaddr[1]
-		pacman.destinationPort = self.destaddr[1]
-		
-		while(addr == self.destaddr and pkt.ctrlBits != 0x8):
-			pkt = pacman.addOutgoing(ctrlBits=0xC)
-			sock.sendto(pacman.outgoingBFR[0][0], self.destaddr)
-			pacman.outgoingBFR[0] = (pacman.outgoingBFR[0][0], time.clock(), pacman.outgoingBFR[0][2]+1)
-			if(pacman.outgoingBFR[0][2] > 5):
+		self.destaddr = addr;
+
+		self.pacman.sourcePort = self.srcaddr[1]
+		self.pacman.destinationPort = self.destaddr[1]
+
+		while(pkt.ctrlBits != 0x8):
+			self.pacman.addOutgoing(ctrlBits=0xC)
+			sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
+			if(self._debug): print ('OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
+			self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
+			if(self.pacman.outgoingBFR[0][2] > 5):
 				if (self._debug):
 					print ('send count exceeded 5')
 					print ('Handshake failure! Terminating connection')
 				return
-			while (time.clock() - pacman.outgoingBFR[0][1] < self.timeout):
-				data, addr = sock.recvfrom(160)
-				if(addr == self.destaddr and data != None):
-					pkt = pacman.stringToPacket(data)
-					pacman.addIncoming(data)
-					if(self._debug): print ('INCOMING', pkt.ctrlBits)
-					break
-		pacman.outgoingBFR.pop(0)
-		self.KeepAlive(sock, pacman)
+			while (time.clock() - self.pacman.outgoingBFR[0][1] < self.timeout):
+				try:
+					data, addr = sock.recvfrom(160)
+					if(addr == self.destaddr):
+						pkt = self.pacman.stringToPacket(data)
+						if(self._debug): print ('INCOMING', pkt.ctrlBits)
+						break
+				except socket.timeout:
+					pass
+		self.pacman.outgoingBFR.pop(0)
+		if(self._debug): print ('EST')
+		self.KeepAlive(sock)
 
-	# KEEPALIVE
-	def KeepAlive(self, sock, pacman):
+	# SERVER & CLIENT KEEPALIVE
+	def KeepAlive(self, sock):
 		while(1):
-			# INCOMING
-			data, addr = sock.recvfrom(1024)
-			if(addr == self.destaddr):
-				# client: server didnt get 0x8
-				if((pacman.stringToPacket(data).ctrlBits == 0xC) and (pacman.stringToPacket(pacman.outgoingBFR[0][0]).ctrlBits == 0x8)):
-					sock.sendto(pacman.outgoingBFR[0][0], self.destaddr)
-					pacman.outgoingBFR[0] = (pacman.outgoingBFR[0][0], time.clock(), pacman.outgoingBFR[0][2]+1)
-					# reset counts to 0
-					if(len(pacman.outgoingBFR) > 1):
-						for i in range(1, len(pacman.outgoingBFR)+1):
-							pacman.outgoingBFR[i] = (pacman.outgoingBFR[i][0], time.clock(), 0)
-					if(pacman.outgoingBFR[0][2] > 5):
-						if (self._debug):
-							print ('Handshake failure! Terminating connection')
-						return
-					continue
-				#server: client ack'd handshake, so pop 0xC
-				elif(pacman.stringToPacket(data).ctrlBits == 0x8):
-					pacman.outgoingBFR.pop(0)
-				else:
-					pacman.addIncoming(data)
-			#OUTGOING
-			pop = False
-			if(len(pacman.outgoingBFR) > 0):
-				for i in range(0, len(pacman.outgoingBFR)+1):
-					if((pacman.outgoingBFR[i][1] == -1) or (time.clock - pacman.outgoingBFR[i][1] > self.timeout)):
-						#Client ACK still in outgoing buffer
-						if(pacman.stringToPacket(pacman.outgoingBFR[i][0]).ctrlBits == 0x8):
-							pacman.outgoingBFR[i] = (pacman.outgoingBFR[i][0], time.clock(), pacman.outgoingBFR[i][2]+1)
-							if(pacman.outgoingBFR[i][2] > 5):
-								pop = True
-							continue
-						sock.sendto(pacman.outgoingBFR[i][0], self.destaddr)
-						pacman.outgoingBFR[i] = (pacman.outgoingBFR[i][0], time.clock(), pacman.outgoingBFR[i][2]+1)
-				if(pop):
-					pacman.outgoingBFR.pop(0)
-
-	def receive(self, BUFFER_SIZE=1024):
-		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		sock.bind((self.srcaddr, self.srcport)) # '' indicates all available interfaces
-		while 1:
-			data, addr = sock.recvfrom(BUFFER_SIZE)
-			if(self._debug): print ('message in:', data)
-
-
-class ServerManager():
-	def __init__(self, port):
-		self.port = port
-		#self.shared = Manager()
-		#self.addrlist = self.shared.list([])
-		#self.plist = []
-		self.spawn()
-
-	#create new listening connection
-	def spawn(self):
-		#self.plist.append(Process(target=self.aConn, args=(self.port, )))
-		#self.plist[-1].start()
-		self.aConn(self.port)
-
-	#multithreaded generator method
-	def aConn(self, port):
-		c = Connection()
-		c.open_server(port)#, self.addrlist)
-
-	#kill process
-	def kill(self, idx):
-		self.addrlist.pop(idx)
-		self.plist[idx].terminate()
+			try:
+				data, addr = sock.recvfrom(self.pacman.BUFFER_SIZE)
+				#INCOMING
+				if(addr == self.destaddr):
+					# client: server didnt get 0x8
+					if((self.pacman.stringToPacket(data).ctrlBits == 0xC) and (self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits == 0x8)):
+						if(self._debug): print ('INCOMING', self.pacman.stringToPacket(data).ctrlBits)
+						sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
+						if(self._debug): print ('OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
+						self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
+						# reset counts to 0
+						if(len(self.pacman.outgoingBFR) > 1):
+							for i in range(1, len(self.pacman.outgoingBFR)+1):
+								self.pacman.outgoingBFR[i] = (self.pacman.outgoingBFR[i][0], time.clock(), 0)
+						if(self.pacman.outgoingBFR[0][2] > 5):
+							if (self._debug):
+								print ('Handshake failure! Terminating connection')
+							return
+						continue
+					#server: client ack'd handshake, so pop 0xC
+					elif(self.pacman.stringToPacket(data).ctrlBits == 0x8):
+						if(self._debug): print ('INCOMING', self.pacman.stringToPacket(data).ctrlBits)
+						self.pacman.outgoingBFR.pop(0)
+					else:
+						if(self._debug): print ('INCOMING data')
+						self.pacman.addIncoming(data)
+			except socket.timeout:
+				#OUTGOING
+				pop = False
+				if(len(self.pacman.outgoingBFR) > 0):
+					for i in range(0, len(self.pacman.outgoingBFR)):
+						if((self.pacman.outgoingBFR[i][1] == -1) or (time.clock() - self.pacman.outgoingBFR[i][1] > self.timeout)):
+							#Client ACK still in outgoing buffer
+							if(self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).ctrlBits == 0x8):
+								self.pacman.outgoingBFR[i] = (self.pacman.outgoingBFR[i][0], time.clock(), self.pacman.outgoingBFR[i][2]+1)
+								if(self.pacman.outgoingBFR[i][2] > 5):
+									pop = True
+								continue
+							sock.sendto(self.pacman.outgoingBFR[i][0], self.destaddr)
+							if(self._debug): print ('OUTGOING')
+							self.pacman.outgoingBFR[i] = (self.pacman.outgoingBFR[i][0], time.clock(), self.pacman.outgoingBFR[i][2]+1)
+					if(pop):
+						self.pacman.outgoingBFR.pop(0)
