@@ -7,9 +7,9 @@ Created on Nov 19, 2014
 class Packet():
     
     def __init__(self, sourcePort, destinationPort, sequenceNumber, acknowledgmentNumber, 
-                 window, checksum, ctrlBits, padding, data):
+                 window, checksum, ctrlBits, data):
         #int: sourcePort,destPort, sequence, ackNum, window
-        #hex: checksum, ctrlbits, padding
+        #hex: checksum, ctrlbits
         #str: data 
         self.sourcePort = sourcePort
         self.destinationPort = destinationPort
@@ -18,7 +18,6 @@ class Packet():
         self.window = window
         self.checksum = checksum
         self.ctrlBits = ctrlBits
-        self.padding = padding
         self.data = data
 
 
@@ -49,7 +48,7 @@ class PacketManager():
     2. Handles the checksum & encryption
     """
     def addOutgoing(self, ctrlBits=0x0, data=""):
-      # set default values for checksum,  padding
+      # set default values for checksum
       
       #increment sequence number until you need to wrap around to 0
       if (data == "" and self.sequenceNumber < 2**16):
@@ -68,7 +67,7 @@ class PacketManager():
       
       #encryptedData = self.encrypt(data)
       pkt = Packet(self.sourcePort, self.destinationPort, seqNum, ackNum, window,
-                   None, ctrlBits, 0x000, data)
+                   None, ctrlBits, data)
       
       checksum = self.checksum(pkt)
       pkt.checksum = checksum
@@ -81,8 +80,14 @@ class PacketManager():
     2. return string
     """
     def packetToString(self, packet):
-      return hex(packet.sourcePort)[2:] + hex(packet.destinationPort)[2:] + hex(packet.acknowledgmentNumber)\
-        + hex(packet.window)[2:] + str(packet.checksum) + str(packet.ctrlBits) + str(packet.padding) + packet.data.encode("hex")
+      return (4-len(hex(packet.sourcePort)[2:]))*'0' + hex(packet.sourcePort)[2:] \
+        + (4-len(hex(packet.destinationPort)[2:]))*'0' + hex(packet.destinationPort)[2:]\
+        + (8-len(hex(packet.acknowledgmentNumber)))*'0' + hex(packet.acknowledgmentNumber)\
+        + (4-len(hex(packet.window)[2:]))*'0' + hex(packet.window)[2:]\
+        + (4-len(str(packet.checksum)))*'0' + str(packet.checksum)\
+        + hex(packet.ctrlBits)\
+        + 24*'0'\
+        + packet.data.encode("hex")
       
     """
     Iterates through a hex string of format '#######...' and length 40 + data
@@ -90,18 +95,17 @@ class PacketManager():
     2. return ctrlBits = 0xF if it FAILS checksum
     """  
     def stringToPacket(self, hexString):
-      sourcePort = int(hexString[0,4])
-      destinationPort = int(hexString[4,8])
-      sequenceNumber = int(hexString[8,16])
-      acknowledgmentNumber = int(hexString[16,24])
-      window = int(hexString[24,28])
+      sourcePort = int(hexString[0,4], 16)
+      destinationPort = int(hexString[4,8], 16)
+      sequenceNumber = int(hexString[8,16], 16)
+      acknowledgmentNumber = int(hexString[16,24], 16)
+      window = int(hexString[24,28], 16)
       checksum = hexString[28,32]
-      ctrlBits = hexString[32]
-      padding = hexString[33, 40]
+      ctrlBits = int(hexString[32], 16)
       data = str(hexString[40:])
     
       pkt = Packet(sourcePort, destinationPort, sequenceNumber, acknowledgmentNumber, 
-                 window, checksum, ctrlBits, padding, data)
+                 window, checksum, ctrlBits, data)
       
       if (pkt.checksum == checksum(pkt)):
         #pkt.data = self.decrypt(pkt.data))
@@ -139,7 +143,7 @@ class PacketManager():
       https://docs.python.org/2/library/hashlib.html
       """
       hashableMaterial = str(packet.sourcePort) + str(packet.destinationPort) + str(packet.sequenceNumber)\
-        + str(packet.acknowledgmentNumber) + str(packet.window) + str(packet.ctrlBits) + str(packet.padding) + str(packet.data)
+        + str(packet.acknowledgmentNumber) + str(packet.window) + str(packet.ctrlBits) + str(packet.data)
       
       sum = hashlib.md5()
       sum.update(hashableMaterial)

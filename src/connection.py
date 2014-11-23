@@ -20,6 +20,9 @@ class Connection():
 	# Generic open connection
 	def open(self, port, addr=('',12000), timeout=1000):
 		self.timeout = timeout
+		if(port > 65535 and addr[1] > 65535):
+			print ('PORT OUT OF RANGE')
+			return
 		# server
 		if(addr == ('',12000)):
 			self.servermanager = ServerManager(port)
