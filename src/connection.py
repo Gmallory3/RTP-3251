@@ -29,18 +29,19 @@ class Connection():
 			return
 		# client
 		else:
-			Process(target=open_client, args=(port, addr, timeout))
+			Process(target=self.open_client, args=(port, addr)).start()
 			return
 
 	# Start the client connection
 	def open_client(self, port, addr):
-		self.srcaddr = (srcaddr[0], port)
+		print 'YPLO'
+		self.srcaddr = (self.srcaddr[0], port)
 		self.destaddr = addr
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.bind(self.srcaddr)
 		pacman = PacketManager(self.srcaddr[1], self.destaddr[1])
 		while(1):
-			pacman.addOutgoing(crtlBits=0x4)
+			pacman.addOutgoing(ctrlBits=0x4)
 			self.send(pacman.outgoingBFR[0])
 			pacman.outgoingBFR[0] = (pacman.outgoingBFR[0][0], time.clock(), pacman.outgoingBFR[0][2]+1)
 			if(pacman.outgoingBFR[0][2] > 5):
