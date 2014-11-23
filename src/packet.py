@@ -2,10 +2,19 @@
 Created on Nov 19, 2014
 
 @author: Garrett
+Note: data comes in as string
+ascii of string is number that is encrypted. Still a string (of numbers now)
+hex of string is taken and put into packet. 
+
+hex taken out and made into string
+string unencrypted
+now you have orininal data string
+
 '''
+
 import hashlib
 import math
-from math import modf
+import random
 
 class Packet():
     
@@ -42,7 +51,7 @@ class PacketManager():
         self.outgoingBFR = []
         #self.incomingBFR = []
         self.applicationBRF = []
-        #self.publicKey, self.privateKey = self.RSA()
+        self.publicKey, self.privateKey = self.RSA()
         
                 
     """
@@ -83,6 +92,7 @@ class PacketManager():
       print("ctrl bits: " + str(pkt.ctrlBits))
       print("data: " + str(pkt.data))
       """
+      
       self.outgoingBFR.append((self.packetToString(pkt), -1, 0))
     
     """
@@ -119,7 +129,7 @@ class PacketManager():
       pkt = Packet(sourcePort, destinationPort, sequenceNumber, acknowledgmentNumber, 
                  window, checksum, ctrlBits, data)
       
-      
+      """
       print("src port: " + str(pkt.sourcePort))
       print("dest port: " + str(pkt.destinationPort))
       print("seq num: " + str(pkt.sequenceNumber))
@@ -128,8 +138,10 @@ class PacketManager():
       print("chk sum: "+ str(pkt.checksum))
       print("ctrl bits: " + str(pkt.ctrlBits))
       print("data: " + str(pkt.data))
+      """
       
       if (pkt.checksum == self.checksum(pkt)):
+       
         #pkt.data = self.decrypt(pkt.data))
         return pkt
       else: 
@@ -153,7 +165,7 @@ class PacketManager():
           indexCount += 1
           
       else: #data pack        
-        self.applicationBRF.add(packet.data)
+        self.applicationBRF.append(packet.data)
     
     
     """
@@ -184,9 +196,10 @@ class PacketManager():
       return fletchersSum
 
 
-    def encrypt(self, message):
-        publicKey = self.RSA()
-        return message**publicKey[1]%publicKey[0]
+    def encrypt(self, message, publicKey):
+        print (int(message))
+        print (publicKey)
+        return int(message**publicKey[1])%publicKey[0]
         
     def decrypt(self, privateKey):
         return privateKey[1]%privateKey[0]
@@ -197,7 +210,7 @@ class PacketManager():
     """
     def RSA(self):
         #allows for seeding RSA with known values for testing if values supplied.
-        if (_DEBUG == True):
+        if (True):
             p = 61
             q = 53
         else:
@@ -216,25 +229,28 @@ class PacketManager():
         
         # 3: Compute Euler's totient function =  n -(p + q -1)
         euler = (p-1)*(q-1)
-        
+        print (p,q,n,euler)
         # 4: Chose integer e such that 1 < e < euler & gcd (e, euler)) = 1
         while True:
-            e = random.randrange(1, euler, 2)
-            if all(e % n != 0 for n in range(3, int((math.sqrt(e) + 1), 2))):
-                # e is prime. now if e is not divisor of 3120, we're good.
-                if (euler%e == 0):
-                    break
+          e = 17
+          break
+          e = random.randrange(1, euler, 2)
+          if all(e % n != 0 for n in range(3, int(math.sqrt(e)) + 1, 2 )):
+            # e is prime. now if e is not divisor of 3120, we're good.
+            if (euler%e == 0):
+              break
+          
         
         # 5: Determine d =- e^-1 mod(euler) (I.e. solve d * e =- 1(mod(euler))
         d = self.modinv(e, euler)
         
         publicKey = (n, e)
         privateKey = (n, d)
-        if (_DEBUG == True):
-            print ("n: " + n)
-            print ("euler: " + euler)
-            print ("e: " + e)
-            print ("d: " + d)
+        print ("n: " + str(n))
+        print ("euler: " + str(euler))
+        print ("e: " + str(e))
+        print ("d: " + str(d))
+        
         return publicKey, privateKey
     
     #####
