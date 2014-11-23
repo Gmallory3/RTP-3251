@@ -3,8 +3,10 @@
 # @version 0.20
 
 import socket, time
-from packet import Packet, PacketManager
-from multiprocessing import Process, Manager
+from packet import Packet
+from packet import PacketManager
+from multiprocessing import Process
+#, Manager
 
 class Connection():
 
@@ -19,10 +21,13 @@ class Connection():
 
 	# Generic open connection
 	def open(self, port, addr=('',12000), timeout=1000):
-		self.timeout = timeout
 		if(port > 65535 and addr[1] > 65535):
 			print ('PORT OUT OF RANGE')
 			return
+		if(len(addr) != 2):
+			print ('ADDR INCORRECTLY FORMATTED')
+			return
+		self.timeout = timeout
 		# server
 		if(addr == ('',12000)):
 			self.servermanager = ServerManager(port)
@@ -34,50 +39,55 @@ class Connection():
 
 	# Start the client connection
 	def open_client(self, port, addr):
-		print 'YPLO'
+		print ('YOLO')
 		self.srcaddr = (self.srcaddr[0], port)
 		self.destaddr = addr
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.bind(self.srcaddr)
 		pacman = PacketManager(self.srcaddr[1], self.destaddr[1])
-		while(1):
-			pacman.addOutgoing(ctrlBits=0x4)
-			self.send(pacman.outgoingBFR[0])
+		pacman.addOutgoing(ctrlBits=0x4)
+		while(len(pacman.outgoingBFR) > 0):
+			sock.sendto(pacman.outgoingBFR[0][0], self.destaddr)
 			pacman.outgoingBFR[0] = (pacman.outgoingBFR[0][0], time.clock(), pacman.outgoingBFR[0][2]+1)
 			if(pacman.outgoingBFR[0][2] > 5):
 				if (self._debug):
 					print ('send count exceeded 5')
 					print ('Handshake failure! Terminating connection')
 				return
-
+			print 'LENGTH', len(pacman.outgoingBFR)
 			while(time.clock() - pacman.outgoingBFR[0][1] < self.timeout):
 				data, addr = sock.recvfrom(160)
 				if(addr == self.destaddr and data != None):
-					if(PacketManager.stringToPacket(data).crtlBits == 0xC):
-						pacman.outgoingBFR[0] = (pacman.outgoingBFR[0][0], time.clock(), 0)
+					if(self._debug): print ('INCOMING', pacman.stringToPacket(data).ctrlBits)
+					if(pacman.stringToPacket(data).ctrlBits == 0xC):
+						pacman.outgoingBFR.remove(0)
 						break
-		pacman.addOutgoing(crtlBits=0x8)
+		pacman.addOutgoing(ctrlBits=0x8)
 		self.KeepAlive(sock, pacman)
 		
 
-	def open_server(self, port, proc_addr):
+	def open_server(self, port):#, proc_addr):
 		self.srcaddr = (self.srcaddr[0], port)
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.bind(self.srcaddr)
+		pacman = PacketManager(-1, -1)
 		# listen 
 		while 1:
 			data, addr = sock.recvfrom(160)
-			pkt = PacketManager.stringToPacket(data)
-			if((pkt.crtlBits == 0x4) and (addr not in proc_addr)):
+			pkt = pacman.stringToPacket(data)
+			if((pkt.ctrlBits == 0x4)): #and (addr not in proc_addr)):
 				break
-		proc_addr.append(addr)
-		self.destaddr = addr;
-		self.servermanager.spawn()
 		
-		pacman = PacketManager(self.srcaddr[1], self.destaddr[1])
-		while(addr == self.destaddr and pkt.crtlBits != 0x8):
-			pkt = pacman.addOutgoing(crtlBits=0xC)
-			self.send(pacman.outgoingBFR[0])
+		#proc_addr.append(addr)
+		self.destaddr = addr;
+		#self.servermanager.spawn()
+
+		pacman.sourcePort = self.srcaddr[1]
+		pacman.destinationPort = self.destaddr[1]
+		
+		while(addr == self.destaddr and pkt.ctrlBits != 0x8):
+			pkt = pacman.addOutgoing(ctrlBits=0xC)
+			sock.sendto(pacman.outgoingBFR[0][0], self.destaddr)
 			pacman.outgoingBFR[0] = (pacman.outgoingBFR[0][0], time.clock(), pacman.outgoingBFR[0][2]+1)
 			if(pacman.outgoingBFR[0][2] > 5):
 				if (self._debug):
@@ -87,7 +97,9 @@ class Connection():
 			while (time.clock() - pacman.outgoingBFR[0][1] < self.timeout):
 				data, addr = sock.recvfrom(160)
 				if(addr == self.destaddr and data != None):
-					pkt = pacman.addIncoming(data)
+					pkt = pacman.stringToPacket(data)
+					pacman.addIncoming(data)
+					if(self._debug): print ('INCOMING', pkt.ctrlBits)
 					break
 		pacman.outgoingBFR.remove(0)
 		self.KeepAlive(sock, pacman)
@@ -99,8 +111,8 @@ class Connection():
 			data, addr = sock.recvfrom(BUFFER_SIZE)
 			if(addr == self.destaddr):
 				# client: server didnt get 0x8
-				if((PacketManager.stringToPacket(data).crtlBits == 0xC) and (PacketManager.stringToPacket(pacman.outgoingBFR[0][0]).crtlBits == 0x8)):
-					self.send(pacman.outgoingBFR[0])
+				if((pacman.stringToPacket(data).ctrlBits == 0xC) and (pacman.stringToPacket(pacman.outgoingBFR[0][0]).ctrlBits == 0x8)):
+					sock.sendto(pacman.outgoingBFR[0][0], self.destaddr)
 					pacman.outgoingBFR[0] = (pacman.outgoingBFR[0][0], time.clock(), pacman.outgoingBFR[0][2]+1)
 					# reset counts to 0
 					if(len(pacman.outgoingBFR) > 1):
@@ -112,7 +124,7 @@ class Connection():
 						return
 					continue
 				#server: client ack'd handshake, so remove 0xC
-				elif(PacketManager.stringToPacket(data).crtlBits == 0x8):
+				elif(pacman.stringToPacket(data).ctrlBits == 0x8):
 					pacman.outgoingBFR.remove(0)
 				else:
 					pacman.addIncoming(data)
@@ -122,23 +134,15 @@ class Connection():
 				for i in range(0, len(pacman.outgoingBFR)+1):
 					if((pacman.outgoingBFR[i][1] == -1) or (time.clock - pacman.outgoingBFR[i][1] > self.timeout)):
 						#Client ACK still in outgoing buffer
-						if(PacketManager.stringToPacket(pacman.outgoingBFR[i][0]).crtlBits == 0x8):
+						if(pacman.stringToPacket(pacman.outgoingBFR[i][0]).ctrlBits == 0x8):
 							pacman.outgoingBFR[i] = (pacman.outgoingBFR[i][0], time.clock(), pacman.outgoingBFR[i][2]+1)
 							if(pacman.outgoingBFR[i][2] > 5):
 								pop = True
 							continue
-						self.send(pacman.outgoingBFR[i])
+						sock.sendto(pacman.outgoingBFR[i][0], self.destaddr)
 						pacman.outgoingBFR[i] = (pacman.outgoingBFR[i][0], time.clock(), pacman.outgoingBFR[i][2]+1)
 				if(pop):
 					pacman.outgoingBFR.remove(0)
-
-	#send over UDP
-	def send(self, PKT):
-		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		sock.bind((self.srcaddr[0], port))
-		if(self._debug): print ('DATA: ', PKT.data)
-		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		sock.sendto(PKT,  PKT)
 
 	def receive(self, BUFFER_SIZE=1024):
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -151,22 +155,23 @@ class Connection():
 class ServerManager():
 	def __init__(self, port):
 		self.port = port
-		self.shared = Manager()
-		self.addrlist = self.shared.list([])
-		self.plist = []
+		#self.shared = Manager()
+		#self.addrlist = self.shared.list([])
+		#self.plist = []
 		self.spawn()
 
 	#create new listening connection
 	def spawn(self):
-		self.plist.append(Process(target=self.aConn, args=(self.port, )))
-		self.plist[-1].start()
+		#self.plist.append(Process(target=self.aConn, args=(self.port, )))
+		#self.plist[-1].start()
+		self.aConn(self.port)
 
 	#multithreaded generator method
-	def aConn(port):
+	def aConn(self, port):
 		c = Connection()
-		c.open_server(port, self.addrlist)
+		c.open_server(port)#, self.addrlist)
 
 	#kill process
-	def kill(idx):
+	def kill(self, idx):
 		self.addrlist.remove(idx)
 		self.plist[idx].terminate()
