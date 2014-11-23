@@ -42,3 +42,23 @@ Notes on checksum:
       >>> m.block_size
       64
       """
+
+            
+  """   
+  API COMMANDS:
+  
+      FTA SERVER
+Command-line:   fta-server X A P
+The command-line arguments are: 
+X: the port number at which the fta-server’s UDP socket should bind to (odd number)
+A: the IP address of NetEmu
+P: the UDP port number of NetEmu
+
+      FTA CLIENT
+Command-line:   fta-client X A P
+The command-line arguments are:
+X: the port number at which the fta-client’s UDP socket should bind to (even number). Please remember that this port number should be equal to the server’s port number minus 1.
+A: the IP address of NetEmu
+P: the UDP port number of NetEmu
+
+  """

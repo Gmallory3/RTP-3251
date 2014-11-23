@@ -43,6 +43,7 @@ class PacketManager():
         self.outgoingBFR = []
         #self.incomingBFR = []
         self.applicationBRF = []
+        self.BUFFER_SIZE = self.window * 1024
         self.publicKey, self.privateKey = self.RSA()
         
                 
