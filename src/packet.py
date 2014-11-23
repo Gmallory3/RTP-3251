@@ -37,8 +37,8 @@ class PacketManager():
         self.destinationPort = destinationPort
         self.window = 10
         
-        self.sequenceNumber = 0
-        self.acknowledgeNumber = 0
+        self.sequenceNumber = 1234
+        self.acknowledgeNumber = 5678
         self.outgoingBFR = []
         #self.incomingBFR = []
         self.applicationBRF = []
@@ -70,12 +70,20 @@ class PacketManager():
         self.acknowledgeNumber = 0
       
       #encryptedData = self.encrypt(data)
-      pkt = Packet(self.sourcePort, self.destinationPort, seqNum, ackNum, window,
+      pkt = Packet(self.sourcePort, self.destinationPort, seqNum, ackNum, self.window,
                    None, ctrlBits, data)
-      
       pkt.checksum = self.checksum(pkt)
-      
-      outgoingBFR.add((self.packetToString(pkt), -1, 0))
+      """
+      print("src port: " + str(pkt.sourcePort))
+      print("dest port: " + str(pkt.destinationPort))
+      print("seq num: " + str(pkt.sequenceNumber))
+      print("ack num: "+ str(pkt.acknowledgmentNumber))
+      print("window: " + str(pkt.window))
+      print("chk sum: "+ str(pkt.checksum))
+      print("ctrl bits: " + str(pkt.ctrlBits))
+      print("data: " + str(pkt.data))
+      """
+      self.outgoingBFR.append((self.packetToString(pkt), -1, 0))
     
     """
     Changes a packet object to a hex string of the format '######...' and length 40 + data
@@ -85,11 +93,12 @@ class PacketManager():
     def packetToString(self, packet):
       return (4-len(hex(packet.sourcePort)[2:]))*'0' + hex(packet.sourcePort)[2:] \
         + (4-len(hex(packet.destinationPort)[2:]))*'0' + hex(packet.destinationPort)[2:]\
-        + (8-len(hex(packet.acknowledgmentNumber)))*'0' + hex(packet.acknowledgmentNumber)\
+        + (8-len(hex(packet.sequenceNumber)[2:]))*'0' + hex(packet.sequenceNumber)[2:]\
+        + (8-len(hex(packet.acknowledgmentNumber)[2:]))*'0' + hex(packet.acknowledgmentNumber)[2:]\
         + (4-len(hex(packet.window)[2:]))*'0' + hex(packet.window)[2:]\
-        + (4-len(str(packet.checksum)))*'0' + str(packet.checksum)\
-        + hex(packet.ctrlBits)\
-        + 24*'0'\
+        + (4-len(hex(packet.checksum)[2:]))*'0' + hex(packet.checksum)[2:]\
+        + hex(packet.ctrlBits)[2:]\
+        + 7*'0'\
         + packet.data.encode("hex")
       
     """
@@ -98,19 +107,29 @@ class PacketManager():
     2. return ctrlBits = 0xF if it FAILS checksum
     """  
     def stringToPacket(self, hexString):
-      sourcePort = int(hexString[0,4], 16)
-      destinationPort = int(hexString[4,8], 16)
-      sequenceNumber = int(hexString[8,16], 16)
-      acknowledgmentNumber = int(hexString[16,24], 16)
-      window = int(hexString[24,28], 16)
-      checksum = hexString[28,32]
+      sourcePort = int(hexString[0:4], 16)
+      destinationPort = int(hexString[4:8], 16)
+      sequenceNumber = int(hexString[8:16], 16)
+      acknowledgmentNumber = int(hexString[16:24], 16)
+      window = int(hexString[24:28], 16)
+      checksum = int(hexString[28:32], 16)
       ctrlBits = int(hexString[32], 16)
-      data = str(hexString[40:])
+      data = hexString[40:].decode("hex")
     
       pkt = Packet(sourcePort, destinationPort, sequenceNumber, acknowledgmentNumber, 
                  window, checksum, ctrlBits, data)
       
-      if (pkt.checksum == checksum(pkt)):
+      
+      print("src port: " + str(pkt.sourcePort))
+      print("dest port: " + str(pkt.destinationPort))
+      print("seq num: " + str(pkt.sequenceNumber))
+      print("ack num: "+ str(pkt.acknowledgmentNumber))
+      print("window: " + str(pkt.window))
+      print("chk sum: "+ str(pkt.checksum))
+      print("ctrl bits: " + str(pkt.ctrlBits))
+      print("data: " + str(pkt.data))
+      
+      if (pkt.checksum == self.checksum(pkt)):
         #pkt.data = self.decrypt(pkt.data))
         return pkt
       else: 
