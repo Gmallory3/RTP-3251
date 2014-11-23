@@ -2,14 +2,6 @@
 Created on Nov 19, 2014
 
 @author: Garrett
-Note: data comes in as string
-ascii of string is number that is encrypted. Still a string (of numbers now)
-hex of string is taken and put into packet. 
-
-hex taken out and made into string
-string unencrypted
-now you have orininal data string
-
 '''
 
 import hashlib
@@ -78,7 +70,7 @@ class PacketManager():
         ackNum = 0
         self.acknowledgeNumber = 0
       
-      #encryptedData = self.encrypt(data)
+      #data = self.encrypt(data, self.publicKey)
       pkt = Packet(self.sourcePort, self.destinationPort, seqNum, ackNum, self.window,
                    None, ctrlBits, data)
       pkt.checksum = self.checksum(pkt)
@@ -141,8 +133,7 @@ class PacketManager():
       """
       
       if (pkt.checksum == self.checksum(pkt)):
-       
-        #pkt.data = self.decrypt(pkt.data))
+        #pkt.data = self.decrypt(pkt.data, self.privateKey)
         return pkt
       else: 
         pkt.ctrlBits = 0xF
@@ -195,14 +186,33 @@ class PacketManager():
       fletchersSum = sum1 + sum2*256
       return fletchersSum
 
-
+    """
+    Encryption by RSA. 
+    1. message comes in as string
+    2. ascii of each string character is number that is encrypted.
+    3. keep a string record of all encrypted characters
+    3. hex of string is taken and put into packet ->> this step occurs in addOutgoing()
+    """
     def encrypt(self, message, publicKey):
-        print (int(message))
-        print (publicKey)
-        return int(message**publicKey[1])%publicKey[0]
-        
-    def decrypt(self, privateKey):
-        return privateKey[1]%privateKey[0]
+        cipherText = ''
+        for letter in message:
+            number = ord(letter)**publicKey[1]%publicKey[0]
+            cipherText += str(number) + ','
+                    
+        return cipherText
+    
+    """
+    De-encryption by RSA.
+    1. hex taken out and made into string ->> occurs in addIncoming()
+    2. parse string on ',' character to separate out each encrypted number
+    2. convert each number into original letter
+    """   
+    def decrypt(self, cipherText, privateKey):
+        plainText = ''
+        for letter in cipherText.split(','):
+            if(letter != ''): #needed because the cipherText ends with a ',' so it appends an empty string to the end of split
+                plainText +=  chr(int(letter)**privateKey[1]%privateKey[0])
+        return plainText
                 
     """
     RSA algorithm used for encryption.
