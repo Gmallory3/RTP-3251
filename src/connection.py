@@ -60,9 +60,10 @@ class Connection():
 				if(addr == self.destaddr and data != None):
 					if(self._debug): print ('INCOMING', pacman.stringToPacket(data).ctrlBits)
 					if(pacman.stringToPacket(data).ctrlBits == 0xC):
-						pacman.outgoingBFR.remove(0)
+						pacman.outgoingBFR.pop(0)
 						break
 		pacman.addOutgoing(ctrlBits=0x8)
+		print 'LENGTH', len(pacman.outgoingBFR)
 		self.KeepAlive(sock, pacman)
 		
 
@@ -101,14 +102,14 @@ class Connection():
 					pacman.addIncoming(data)
 					if(self._debug): print ('INCOMING', pkt.ctrlBits)
 					break
-		pacman.outgoingBFR.remove(0)
+		pacman.outgoingBFR.pop(0)
 		self.KeepAlive(sock, pacman)
 
 	# KEEPALIVE
 	def KeepAlive(self, sock, pacman):
 		while(1):
 			# INCOMING
-			data, addr = sock.recvfrom(BUFFER_SIZE)
+			data, addr = sock.recvfrom(1024)
 			if(addr == self.destaddr):
 				# client: server didnt get 0x8
 				if((pacman.stringToPacket(data).ctrlBits == 0xC) and (pacman.stringToPacket(pacman.outgoingBFR[0][0]).ctrlBits == 0x8)):
@@ -123,9 +124,9 @@ class Connection():
 							print ('Handshake failure! Terminating connection')
 						return
 					continue
-				#server: client ack'd handshake, so remove 0xC
+				#server: client ack'd handshake, so pop 0xC
 				elif(pacman.stringToPacket(data).ctrlBits == 0x8):
-					pacman.outgoingBFR.remove(0)
+					pacman.outgoingBFR.pop(0)
 				else:
 					pacman.addIncoming(data)
 			#OUTGOING
@@ -142,7 +143,7 @@ class Connection():
 						sock.sendto(pacman.outgoingBFR[i][0], self.destaddr)
 						pacman.outgoingBFR[i] = (pacman.outgoingBFR[i][0], time.clock(), pacman.outgoingBFR[i][2]+1)
 				if(pop):
-					pacman.outgoingBFR.remove(0)
+					pacman.outgoingBFR.pop(0)
 
 	def receive(self, BUFFER_SIZE=1024):
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -173,5 +174,5 @@ class ServerManager():
 
 	#kill process
 	def kill(self, idx):
-		self.addrlist.remove(idx)
+		self.addrlist.pop(idx)
 		self.plist[idx].terminate()
