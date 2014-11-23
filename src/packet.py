@@ -3,13 +3,16 @@ Created on Nov 19, 2014
 
 @author: Garrett
 '''
+import hashlib
+import math
+from math import modf
 
 class Packet():
     
     def __init__(self, sourcePort, destinationPort, sequenceNumber, acknowledgmentNumber, 
                  window, checksum, ctrlBits, data):
-        #int: sourcePort,destPort, sequence, ackNum, window
-        #hex: checksum, ctrlbits
+        #int: sourcePort,destPort, sequence, ackNum, window, checksum 
+        #hex: ctrlbits
         #str: data 
         self.sourcePort = sourcePort
         self.destinationPort = destinationPort
@@ -50,16 +53,17 @@ class PacketManager():
     def addOutgoing(self, ctrlBits=0x0, data=""):
       # set default values for checksum
       
+      seqNum = self.sequenceNumber
+      ackNum = self.acknowledgeNumber
       #increment sequence number until you need to wrap around to 0
       if (data == "" and self.sequenceNumber < 2**16):
-        seqNum = self.sequenceNumber
         self.sequenceNumber += 1
       elif(data == "" and self.sequenceNumber >= 2**16):
         seqNum = 0
         self.sequenceNumber = 0
+        
       #increment ack numbers until you need to wrap -- access this only in data is EMPTY
       elif(data != "" and self.acknowledgeNumber < 2**16):
-        ackNum = self.acknowledgeNumber
         self.acknowledgeNumber += 1
       elif(data != "" and self.acknowledgeNumber >= 2**16):
         ackNum = 0
@@ -69,8 +73,7 @@ class PacketManager():
       pkt = Packet(self.sourcePort, self.destinationPort, seqNum, ackNum, window,
                    None, ctrlBits, data)
       
-      checksum = self.checksum(pkt)
-      pkt.checksum = checksum
+      pkt.checksum = self.checksum(pkt)
       
       outgoingBFR.add((self.packetToString(pkt), -1, 0))
     
@@ -134,38 +137,32 @@ class PacketManager():
         self.applicationBRF.add(packet.data)
     
     
-    
-
+    """
+    16-bit Fletcher's Checksum. Returns a int value 0-65535 (i.e. 16 bit int)
+    """
     def checksum(self, packet):
       """
-      BELOW is place holder code to enable us to move forward with a checksum. 
-      It is necessary to come back and code this ourselves for full credit for checksum
-      https://docs.python.org/2/library/hashlib.html
+      https://en.wikipedia.org/wiki/Fletcher%27s_checksum
+      As described in the article above:
+      Step 1: divide up binary word (i.e. hashable material) into 8 bit blocks
+      1b: if string of characters, each string is an 8 bit btye
+      
+      Step 2: Add up all 8 bit blocks of message
+      Step 3: mod the result by 255 (can be taken at every step to keep size down)
+      Step 4: Keep a running sum of the values computed in step 3, moding it by 255 as well
+      Step 5: combine the running sum and the simple sum into a 16 bit checksum
       """
       hashableMaterial = str(packet.sourcePort) + str(packet.destinationPort) + str(packet.sequenceNumber)\
-        + str(packet.acknowledgmentNumber) + str(packet.window) + str(packet.ctrlBits) + str(packet.data)
+        + str(packet.acknowledgmentNumber) + str(packet.window) + str(packet.ctrlBits) + packet.data
       
-      sum = hashlib.md5()
-      sum.update(hashableMaterial)
-      sum.digest()
-      print ("m: " + sum)
-      print ("m digest: " + sum.digest)
-      print ("m digest size: " + sum.digest_size)
-      print ("m block size: " + sum.blocksize)
-      self.checksum = sum
-      """
-      >>> 
-      >>> m = hashlib.md5()
-      >>> m.update("Nobody inspects")
-      >>> m.update(" the spammish repetition")
-      >>> m.digest()
-      '\xbbd\x9c\x83\xdd\x1e\xa5\xc9\xd9\xde\xc9\xa1\x8d\xf0\xff\xe9'
-      >>> m.digest_size
-      16
-      >>> m.block_size
-      64
-      """
-
+      sum1 = 0
+      sum2 = 0
+      for block in hashableMaterial:
+        sum1 = (sum1 + ord(block)) % 255
+        sum2 = (sum2 + sum1) % 255
+      
+      fletchersSum = sum1 + sum2*256
+      return fletchersSum
 
 
     def encrypt(self, message):

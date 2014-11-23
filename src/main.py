@@ -3,7 +3,7 @@
 # @version 0.10
 
 from connection import Connection
-from packet import Packet
+from packet import Packet, PacketManager
 
 def client():
     clientConn = Connection()
@@ -18,6 +18,12 @@ def server():
 
 
 if __name__ == '__main__':
+  #(self, sourcePort, destinationPort, sequenceNumber, acknowledgmentNumber,window, checksum, ctrlBits, padding, data):
+  pkt = Packet(1234, 5678, 0, 0, 10, 0x00, 0x8, "hello world")
+  pacman = PacketManager(1234, 5678)
+  print (pkt)
+  print (pacman.checksum(pkt))
+  """
     a = [1,1,1]
     for i in a:
         i = 2
@@ -29,3 +35,4 @@ if __name__ == '__main__':
         server()
     else:
         print ("Invalid Input.")
+  """
