@@ -41,17 +41,16 @@ class Connection():
 
 	# Send stuff
 	def send(self, obj):
-		#self.pacman.addOutgoingFile(data=obj)
-		pass
+		self.queue.put((2, obj))
 
 	# Receive stuff
-	def receive(self):
-		while(1): pass
-		# while(len(self.pacman.getApplicationBFR()) == 0): pass
-		# print "WHAT"
-		# retVal = self.pacman.getApplicationBFR()[0]
-		# self.pacman.popApplicationBFR(0)
-		# return retVal
+	def receive(self, timeout = 10):
+		t = time.clock()
+		while(time.clock() - t < timeout): 
+			if(not self.queue.empty()):
+				q = self.queue.get()
+				#print "RECV'D", type(q)
+				return q
 
 	# End connection
 	def terminate(self):
@@ -155,13 +154,21 @@ class Connection():
 	def KeepAlive(self, sock, queue):
 		q = None
 		while(1):
+			#incoming parameters
 			if(not queue.empty()): q = queue.get()
 			else: q = None
-			if(q != None and type(q) == tuple and q[0] == 1):
-				self.pacman.addOutgoing(ctrlBits=0x2)
-				sock.sendto(self.pacman.outgoingBFR[-1][0], self.destaddr)
-				if(self._debug): print ('OUTGOING FIN')
-				self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[-1][0], time.clock(), self.pacman.outgoingBFR[-1][2]+1)
+			if(q != None and type(q) == tuple):
+				if(q[0] == 1):
+					self.pacman.addOutgoing(ctrlBits=0x2)
+					sock.sendto(self.pacman.outgoingBFR[-1][0], self.destaddr)
+					if(self._debug): print ('OUTGOING FIN')
+					self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[-1][0], time.clock(), self.pacman.outgoingBFR[-1][2]+1)
+				elif(q[0] == 2):
+					self.pacman.addOutgoingFile(data=obj)
+			#outgoing parameters
+			if(len(self.pacman.applicationBFR) > 0):
+				q.put(self.pacman.applicationBFR[0])
+				self.pacman.applicationBFR.pop(0)
 			try:
 				data, addr = sock.recvfrom(self.pacman.BUFFER_SIZE)
 				#INCOMING
