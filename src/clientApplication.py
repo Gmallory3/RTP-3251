@@ -20,38 +20,45 @@ class ClientApplication(object):
       #Command:     connect (only for projects that support bi-directional transfers)
       #The FTA-client connects to the FTA-server (running at the same IP host). 
       self.clientConnection = Connection()
-      self.clientConnection.open(portOfClient, destIp, destPort)
+      self.clientConnection.open(portOfClient, (destIp, destPort))
     
     def getF(self, fileName):
       #Command:     get F (only for projects that support bi-directional transfers)
       #The FTA-client downloads file F from the server (if F exists in the same directory as the fta-server executable).
-      fileRequestStr = str(0xFFFFFFFF)+ fileName
-      print(fileRequestStr)
-      self.clientConnection.send(fileRequestStr)
+      fileRequestObj = ['FFFFFFFF', fileName]
+      pickledRequest = cPickle.dumps(fileRequestObk)
+      self.clientConnection.send(pickledRequest)
       
       serialObj = self.clientConnection.receive()
-      f = open("fileResult", "w")
+      f = open(fileName, "w")
       f.write(cPickle.loads(serialObj)[0]) 
       
     def postF(self, fileName):
       #Command:     post F (only for projects that support bi-directional transfers)
       #The FTA-client uploads file F to the server (if F exists in the same directory as the fta-client executable).
       f = open(fileName, 'r')
-      obj = [f.read()]
+      obj = [filename, f.read()]
       serialObj = cPickle.dumps(obj)
       self.clientConnection.send(serialObj)
+      
+      serialObj = self.clientConnection.receive()
+      serverReply = cPickle.loads(serialObj)
+      if (serverReply[0] == filename and serverReply[1] == "confirmed"):
+        print (filename + " was confirmed")
+      else:
+        print (filename + " was not confirmed")
     
-    def disconnect(self):
+    def terminate(self):
       #Command:     disconnect (only for projects that support bi-directional transfers)
       #The FTA-client terminates gracefully from the FTA-server. 
       pass
       
       
-      
+      # add file confirmation
 if __name__ == "__main__":
   cApp = ClientApplication()
   cApp.connect()
-  fileRequestStr = str(0xFFFFFFFF) + 'file1'
-  print(fileRequestStr)
-      
+
+
+  
         
