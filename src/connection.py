@@ -37,7 +37,7 @@ class Connection():
 			return
 
 	def send(self, obj):
-		self.pacman.addOutgoing(data=obj)
+		self.pacman.addOutgoingFile(data=obj)
 
 
 	# Start the client connection
