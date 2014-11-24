@@ -88,6 +88,20 @@ class PacketManager():
       
       self.outgoingBFR.append((self.packetToString(pkt), -1, 0))
     
+    def addOutgoingFile(self, data):
+      for i in range(0, len(data)/math.ceil((self.BUFFER_SIZE/self.window))):
+        if(len(data)/math.ceil((self.BUFFER_SIZE/self.window)) == 1):
+         self.addOutgoing(data=data,ctrlBits=0x1)
+         self.addOutgoing(ctrlBits=0x1)
+        else:
+         if(i == 0):
+           self.addOutgoing(data=data[0:(self.BUFFER_SIZE/self.window)], ctrlBits=0x1)
+         elif (i == len(data)/math.ceil((self.BUFFER_SIZE/self.window))-1):
+           self.addOutgoing(data=data[i*(self.BUFFER_SIZE/self.window):], ctrlBits=0x1)
+         else:
+           self.addOutgoing(data=data[(i*self.BUFFER_SIZE/self.window):(i+1)(self.BUFFER_SIZE/self.window)])
+    
+    
     """
     Changes a packet object to a hex string of the format '######...' and length 40 + data
     1. Does NOT include a '0x' at the beginning
@@ -145,7 +159,8 @@ class PacketManager():
     """
     def addIncoming(self, hexString):
       packet = self.stringToPacket(hexString)
-      if packet.ctrlBits == 0xF: # Check validity
+#       if packet.ctrlBits == 0xF: # Check validity
+      if (packet.ctrlBits != 0x8 or packet.ctrlBits !=0x0): # if invalid, ctrl = 0xF. Only valid packets are 0x8 (ack) and 0x0 (data packte)
         return
       
       if packet.data == "": #ack pack
@@ -153,7 +168,7 @@ class PacketManager():
         for pkt,time,count in self.outgoingBFR:# match the ack number and sequence number and remove packet from outgoing buffer if match
           outGoingPacket = self.stringToPacket(pkt)
           if (packet.acknowledgmentNumber == outGoingPacket.sequenceNumber):
-            self.outgoingBFR.remove(indexCount)
+            self.outgoingBFR.pop(indexCount)
           indexCount += 1
           
       else: #data pack        

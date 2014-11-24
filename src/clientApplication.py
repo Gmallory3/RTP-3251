@@ -4,7 +4,8 @@ Created on Nov 17, 2014
 @author: Garrett
 '''
 
-import connection
+from connection import Connection
+import cPickle
 
 class ClientApplication(object):
     '''  
@@ -12,26 +13,34 @@ class ClientApplication(object):
     '''
 
     def __init__(self):
-      f = open("file1", "r")
-      print (f.read())
+      pass
       
     #Client commands
     def connect(self, portOfClient=12000, destIp="143.215.129.100", destPort=7000):
       #Command:     connect (only for projects that support bi-directional transfers)
       #The FTA-client connects to the FTA-server (running at the same IP host). 
-      pass
+      self.clientConnection = Connection()
+      self.clientConnection.open(portOfClient, destIp, destPort)
     
-    def getF(self):
+    def getF(self, fileName):
       #Command:     get F (only for projects that support bi-directional transfers)
       #The FTA-client downloads file F from the server (if F exists in the same directory as the fta-server executable).
-      str = connectionGetFileCommand()
-      f = open("file1Result", "w")
-      f.write(str)
+      fileRequestStr = str(0xFFFFFFFF)+ fileName
+      print(fileRequestStr)
+      self.clientConnection.send(fileRequestStr)
       
-    def postF(self):
+      serialObj = self.clientConnection.receive()
+      f = open("fileResult", "w")
+      f.write(cPickle.loads(serialObj)[0]) 
+      
+    def postF(self, fileName):
       #Command:     post F (only for projects that support bi-directional transfers)
       #The FTA-client uploads file F to the server (if F exists in the same directory as the fta-client executable).
-      pass
+      f = open(fileName, 'r')
+      obj = [f.read()]
+      serialObj = cPickle.dumps(obj)
+      self.clientConnection.send(serialObj)
+    
     def disconnect(self):
       #Command:     disconnect (only for projects that support bi-directional transfers)
       #The FTA-client terminates gracefully from the FTA-server. 
@@ -41,6 +50,8 @@ class ClientApplication(object):
       
 if __name__ == "__main__":
   cApp = ClientApplication()
-      
+  cApp.connect()
+  fileRequestStr = str(0xFFFFFFFF) + 'file1'
+  print(fileRequestStr)
       
         
