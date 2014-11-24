@@ -36,9 +36,21 @@ class Connection():
 			Process(target=self.open_client, args=(port, addr)).start()
 			return
 
+	# Send stuff
 	def send(self, obj):
 		self.pacman.addOutgoingFile(data=obj)
 
+	# Receive stuff
+	def receive(self):
+		while(len(pacman.applicationBFR) == 0)
+		retVal = pacman.applicationBFR[0]
+		pacman.applicationBFR.pop(0)
+		return retVal
+
+
+	# End connection
+	def terminate(self):
+		pass
 
 	# Start the client connection
 	def open_client(self, port, addr):
@@ -94,7 +106,7 @@ class Connection():
 			except socket.timeout:
 				pass
 
-		self.destaddr = addr;
+		self.destaddr = addr
 
 		self.pacman.sourcePort = self.srcaddr[1]
 		self.pacman.destinationPort = self.destaddr[1]

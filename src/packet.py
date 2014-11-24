@@ -41,12 +41,12 @@ class PacketManager():
         self.sequenceNumber = 1234
         self.acknowledgeNumber = 5678
         self.outgoingBFR = []
-        #self.incomingBFR = []
-        self.applicationBRF = []
+        self.tmpIncomingBFR = []
+        self.applicationBFR = []
         self.BUFFER_SIZE = self.window * 1024
         self.publicKey, self.privateKey = self.RSA()
         
-                
+
     """
     Packetize the data and add to outgoing buffer
     1. Handles seq & ack number wrapping around
@@ -56,24 +56,15 @@ class PacketManager():
       # set default values for checksum
       
       seqNum = self.sequenceNumber
-      ackNum = self.acknowledgeNumber
       #increment sequence number until you need to wrap around to 0
-      if (data == "" and self.sequenceNumber < 2**16):
+      if (self.sequenceNumber < 2**16-1):
         self.sequenceNumber += 1
-      elif(data == "" and self.sequenceNumber >= 2**16):
+      else:
         seqNum = 0
         self.sequenceNumber = 0
-        
-      #increment ack numbers until you need to wrap -- access this only in data is EMPTY
-      elif(data != "" and self.acknowledgeNumber < 2**16):
-        self.acknowledgeNumber += 1
-      elif(data != "" and self.acknowledgeNumber >= 2**16):
-        ackNum = 0
-        self.acknowledgeNumber = 0
       
       #data = self.encrypt(data, self.publicKey)
-      pkt = Packet(self.sourcePort, self.destinationPort, seqNum, ackNum, self.window,
-                   None, ctrlBits, data)
+      pkt = Packet(self.sourcePort, self.destinationPort, seqNum, 0, self.window, None, ctrlBits, data)
       pkt.checksum = self.checksum(pkt)
       """
       print("src port: " + str(pkt.sourcePort))
@@ -159,21 +150,61 @@ class PacketManager():
     """
     def addIncoming(self, hexString):
       packet = self.stringToPacket(hexString)
-#       if packet.ctrlBits == 0xF: # Check validity
-      if (packet.ctrlBits != 0x8 or packet.ctrlBits !=0x0): # if invalid, ctrl = 0xF. Only valid packets are 0x8 (ack) and 0x0 (data packte)
-        return
-      
-      if packet.data == "": #ack pack
-        indexCount = 0
-        for pkt,time,count in self.outgoingBFR:# match the ack number and sequence number and remove packet from outgoing buffer if match
-          outGoingPacket = self.stringToPacket(pkt)
-          if (packet.acknowledgmentNumber == outGoingPacket.sequenceNumber):
-            self.outgoingBFR.pop(indexCount)
-          indexCount += 1
+      if packet.ctrlBits == 0xF: # Check validity
+        #handshake ctrl flags
+        if (packet.ctrlBits == 0xC or packet.ctrlBit == 0x4):
+          return
+        #ack
+        elif packet.ctrlBits == 0x8:
+          #handshake reminants
+          for i,n in enumerate(self.outgoingBFR):
+            if self.stringToPacket(i[0][0]).ctrlBits == 0xC:
+              self.outgoingBFR.pop(n)
+              return
+          #remove from outgoingBFR
+          remove = []
+          for i,n in enumerate(self.outgoingBFR):
+            if(i[0].sequenceNumber == packet.acknowledgmentNumber):
+              remove.append(n)
+          for i in range(len(remove)-1, 0, -1):
+            self.outgoingBFR.pop(i)
+          del remove[:]
+        #data
+        else:
+          #Deal with data
+          tmpIncomingBFR.append((packet.sequenceNumber, packet.data, packet.ctrlBits))
+          c_idx = []
+          for i in tmpIncomingBFR:
+            if i[2] == 0x1: c_idx.append(i[0])
+          if(len(c_idx) == 2):
+            c_idx.sort()
+            tmpArr = [None]*(c_idx[1] - c_idx[0] + 1)
+            remove = []
+            for i,n in enumerate(tmpIncomingBFR):
+              if((i[0] >= c_idx[0]) and (i[0] <= c_idx[1])):
+                tmpArr[i[0]-c_idx[0]] = i[1]
+                remove.append(n)
+            if(len(remove) == (c_idx[1]-c_idx[0]+1)):
+              applicationBFR.append(''.join(tmpArr))
+              for i in remove:
+                tmpIncomingBFR.pop(i)
+            del remove[:]
+            del tmpArr[:]
+
+          #Generate ACK packet
+          seqNum = self.sequenceNumber
+          #increment sequence number until you need to wrap around to 0
+          if (self.sequenceNumber < 2**16-1):
+            self.sequenceNumber += 1
+          else:
+            seqNum = 0
+            self.sequenceNumber = 0
+          ackNum = packet.sequenceNumber
+          pkt = Packet(self.sourcePort, self.destinationPort, seqNum, ackNum, self.window, None, 0x8, '')
+          pkt.checksum = self.checksum(pkt)
           
-      else: #data pack        
-        self.applicationBRF.append(packet.data)
-    
+          self.outgoingBFR.append((self.packetToString(pkt), -1, 0))
+
     
     """
     16-bit Fletcher's Checksum. Returns a int value 0-65535 (i.e. 16 bit int)
