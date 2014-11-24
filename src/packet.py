@@ -79,7 +79,7 @@ class PacketManager():
       self.outgoingBFR.append((self.packetToString(pkt), -1, 0))
     
     def addOutgoingFile(self, data):
-      for i in range(0, len(data)/math.ceil((self.BUFFER_SIZE/self.window))):
+      for i in range(0, len(data)/int(math.ceil((self.BUFFER_SIZE/self.window)))):
         if(len(data)/math.ceil((self.BUFFER_SIZE/self.window)) == 1):
          self.addOutgoing(data=data,ctrlBits=0x1)
          self.addOutgoing(ctrlBits=0x1)
