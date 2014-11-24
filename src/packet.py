@@ -26,13 +26,13 @@ class Packet():
 
 
 class PacketManager():
-    applicationBFR = []
     """
     Sets up a Packet Manager for one connection. 
     1. SourcePort and destinationPort are connection specific and are set with parameters
     2. Window defaults to 10. Any changes should come from directly referencing the variable in connection.py
     3. Creates a public and private key with RSA
     """
+    
     def __init__(self, sourcePort, destinationPort):
         self.sourcePort = sourcePort
         self.destinationPort = destinationPort
@@ -41,10 +41,10 @@ class PacketManager():
         self.sequenceNumber = 1234
         self.acknowledgeNumber = 5678
         self.outgoingBFR = []
+        self.applicationBFR = []
         self.tmpIncomingBFR = []
         self.BUFFER_SIZE = self.window * 1024
         self.publicKey, self.privateKey = self.RSA()
-        
 
     """
     Packetize the data and add to outgoing buffer
@@ -184,7 +184,7 @@ class PacketManager():
                 tmpArr[i[0]-c_idx[0]] = i[1]
                 remove.append(n)
             if(len(remove) == (c_idx[1]-c_idx[0]+1)):
-              applicationBFR.append(''.join(tmpArr))
+              self.applicationBFR.append(''.join(tmpArr))
               for i in remove:
                 tmpIncomingBFR.pop(i)
             del remove[:]
@@ -285,7 +285,7 @@ class PacketManager():
         
         # 3: Compute Euler's totient function =  n -(p + q -1)
         euler = (p-1)*(q-1)
-        print (p,q,n,euler)
+        # print (p,q,n,euler)
         # 4: Chose integer e such that 1 < e < euler & gcd (e, euler)) = 1
         while True:
           e = 17
@@ -302,10 +302,10 @@ class PacketManager():
         
         publicKey = (n, e)
         privateKey = (n, d)
-        print ("n: " + str(n))
-        print ("euler: " + str(euler))
-        print ("e: " + str(e))
-        print ("d: " + str(d))
+        # print ("n: " + str(n))
+        # print ("euler: " + str(euler))
+        # print ("e: " + str(e))
+        # print ("d: " + str(d))
         
         return publicKey, privateKey
     

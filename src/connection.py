@@ -5,21 +5,22 @@
 import socket, time
 from packet import Packet
 from packet import PacketManager
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 #, Manager
 
 class Connection():
-
 	def __init__(self, _debug=True):
 		self._debug = _debug
 		self.destaddr = ('', -1)
 		self.srcaddr = ('', -1)
 		self.sockettimeout = 1  #in FREAKING SECONDS!!
 		self.timeout = 1 # IN SECONDS AS WELL
-		self.pacman = None
+		self.pacman = PacketManager(-1,-1)
+		self.connType = None # 0 client 1 server
+		self.queue = Queue()
 
 	# Generic open connection
-	def open(self, port, addr=('',12000), timeout=1000):
+	def open(self, port, addr=('',12000), timeout=1):
 		if(port > 65535 and addr[1] > 65535):
 			print ('PORT OUT OF RANGE')
 			return
@@ -29,37 +30,42 @@ class Connection():
 		self.timeout = timeout
 		# server
 		if(addr == ('',12000)):
-			Process(target=self.open_server, args=(port, )).start()
+			self.connType = 1
+			Process(target=self.open_server, args=(port, self.queue)).start()
 			return
 		# client
 		else:
-			Process(target=self.open_client, args=(port, addr)).start()
+			self.connType = 0
+			Process(target=self.open_client, args=(port, addr, self.queue)).start()
 			return
 
 	# Send stuff
 	def send(self, obj):
-		self.pacman.addOutgoingFile(data=obj)
+		#self.pacman.addOutgoingFile(data=obj)
+		pass
 
 	# Receive stuff
 	def receive(self):
-		while(len(PacketManager.applicationBFR) == 0): pass
-		retVal = PacketManager.applicationBFR[0]
-		PacketManager.applicationBFR.pop(0)
-		return retVal
-
+		while(1): pass
+		# while(len(self.pacman.getApplicationBFR()) == 0): pass
+		# print "WHAT"
+		# retVal = self.pacman.getApplicationBFR()[0]
+		# self.pacman.popApplicationBFR(0)
+		# return retVal
 
 	# End connection
 	def terminate(self):
-		pass
+		self.queue.put((1, ))
 
 	# Start the client connection
-	def open_client(self, port, addr):
+	def open_client(self, port, addr, queue):
 		self.srcaddr = (self.srcaddr[0], port)
 		self.destaddr = addr
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.settimeout(self.sockettimeout)
 		sock.bind(self.srcaddr)
-		self.pacman = PacketManager(self.srcaddr[1], self.destaddr[1])
+		self.pacman.sourcePort = self.srcaddr[1]
+		self.pacman.destinationPort = self.destaddr[1]
 		self.pacman.addOutgoing(ctrlBits=0x4)
 		while(len(self.pacman.outgoingBFR) > 0):
 			sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
@@ -88,10 +94,11 @@ class Connection():
 		sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
 		if(self._debug): print ('OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
 		self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
-		self.KeepAlive(sock)
+		self.KeepAlive(sock, queue)
+		return
 		
 
-	def open_server(self, port):
+	def open_server(self, port, queue):
 		self.srcaddr = (self.srcaddr[0], port)
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.settimeout(self.sockettimeout)
@@ -99,6 +106,7 @@ class Connection():
 		self.pacman = PacketManager(-1, -1)
 		# listen 
 		exitwhile = False
+		if(self._debug): print ('Listening...')
 		while 1:
 			try:
 				data, addr = sock.recvfrom(160)
@@ -140,11 +148,20 @@ class Connection():
 				if(exitwhile): break
 		self.pacman.outgoingBFR.pop(0)
 		if(self._debug): print ('EST')
-		self.KeepAlive(sock)
+		self.KeepAlive(sock, queue)
+		return
 
 	# SERVER & CLIENT KEEPALIVE
-	def KeepAlive(self, sock):
+	def KeepAlive(self, sock, queue):
+		q = None
 		while(1):
+			if(not queue.empty()): q = queue.get()
+			else: q = None
+			if(q != None and type(q) == tuple and q[0] == 1):
+				self.pacman.addOutgoing(ctrlBits=0x2)
+				sock.sendto(self.pacman.outgoingBFR[-1][0], self.destaddr)
+				if(self._debug): print ('OUTGOING FIN')
+				self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[-1][0], time.clock(), self.pacman.outgoingBFR[-1][2]+1)
 			try:
 				data, addr = sock.recvfrom(self.pacman.BUFFER_SIZE)
 				#INCOMING
@@ -168,6 +185,21 @@ class Connection():
 					elif(self.pacman.stringToPacket(data).ctrlBits == 0x8):
 						if(self._debug): print ('INCOMING', self.pacman.stringToPacket(data).ctrlBits)
 						self.pacman.outgoingBFR.pop(0)
+					#FIN
+					elif(self.pacman.stringToPacket(data).ctrlBits == 0x2):
+						if(self._debug): print ('INCOMING FIN')
+						del self.pacman.outgoingBFR[:]
+						self.pacman.addOutgoing(ctrlBits=0xA)
+						while(self.pacman.outgoingBFR[0][2] < 5):
+							if((self.pacman.outgoingBFR[0][1] == -1) or (time.clock() - self.pacman.outgoingBFR[0][1] > self.timeout)):
+								sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
+								if(self._debug): print ('OUTGOING FIN ACK')
+								self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
+						return
+					elif(self.pacman.stringToPacket(data).ctrlBits == 0xA):
+						if(self._debug): print ('INCOMING FIN ACK')
+						return
+					#data
 					else:
 						if(self._debug): print ('INCOMING data')
 						self.pacman.addIncoming(data)

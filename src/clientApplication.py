@@ -6,6 +6,7 @@ Created on Nov 17, 2014
 
 from connection import Connection
 import cPickle
+import time
 
 class ClientApplication(object):
     '''  
@@ -51,7 +52,7 @@ class ClientApplication(object):
     def terminate(self):
       #Command:     disconnect (only for projects that support bi-directional transfers)
       #The FTA-client terminates gracefully from the FTA-server. 
-      pass
+      self.clientConnection.terminate()
       
       
       # add file confirmation
@@ -59,6 +60,10 @@ if __name__ == "__main__":
   cApp = ClientApplication()
   #cApp.connect()
   cApp.connect(12000, '127.0.0.1', 12001)
+
+  t = time.clock()
+  while (time.clock() - t < 2): pass
+  cApp.terminate()
 
   
         

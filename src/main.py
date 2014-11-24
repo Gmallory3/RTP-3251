@@ -4,10 +4,14 @@
 
 from connection import Connection
 from packet import Packet, PacketManager
+import time
 
 def client():
     clientConn = Connection()
     clientConn.open(12000, ('127.0.0.1',12001))
+    t = time.clock()
+    while (time.clock() - t < 2): pass
+    clientConn.terminate()
     # while 1:
     #     clientConn.send(input('>>'));
 
