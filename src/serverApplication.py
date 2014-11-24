@@ -5,7 +5,10 @@ Created on Nov 17, 2014
 '''
 
 from connection import Connection
-import cPickle
+try:
+   import cPickle as pickle
+except:
+   import pickle
 
 
 class ServerApplication():
@@ -23,28 +26,29 @@ class ServerApplication():
     def listen(self):
       while(1):
         serialObj = self.serverConnection.receive() #stuck until receives a file read or write request
-        requestObj = cPickle.loads(serialObj)
+        requestObj = pickle.loads(serialObj)
         if (requestObj[0] == "FFFFFFFF"): #client wants file
           self.replyF(requestObj[1])
         else: #client is posting file as ['filename', content]
           f.open(requestObj[0],'w')
           f.write(requestObj[1])
           fileConfirmation = [requestObj[0], 'confirmed']
-          self.serverConnection.send(cPickle.dumps(fileConfirmation))
+          self.serverConnection.send(pickle.dumps(fileConfirmation))
       
     def replyF(self, fileName):
       #Command:     post F (only for projects that support bi-directional transfers)
       #The FTA-client uploads file F to the server (if F exists in the same directory as the fta-client executable).
       f = open(fileName, 'r')
       obj = [fileName, f.read()]
-      self.serverConnection.send(cPickle.dumps(obj))
+      self.serverConnection.send(pickle.dumps(obj))
     
     def terminate(self):
       #Shuts down FTA-Server gracefully
-      pass 
+      self.serverConnection.terminate()
         
 if __name__ == "__main__":
-  serverApp = ServerApplication()
-  serverApp.openServer()
-  serverApp.listen()
-      
+  print (pickle.dumps("this"))
+#   serverApp = ServerApplication()
+#   serverApp.openServer()
+#   serverApp.listen()
+  pass

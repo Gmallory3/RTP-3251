@@ -5,7 +5,10 @@ Created on Nov 17, 2014
 '''
 
 from connection import Connection
-import cPickle
+try:
+   import cPickle as pickle
+except:
+   import pickle
 import time
 
 class ClientApplication(object):
@@ -27,27 +30,30 @@ class ClientApplication(object):
       #Command:     get F (only for projects that support bi-directional transfers)
       #The FTA-client downloads file F from the server (if F exists in the same directory as the fta-server executable).
       fileRequestObj = ['FFFFFFFF', fileName]
-      pickledRequest = cPickle.dumps(fileRequestObk)
-      self.clientConnection.send(pickledRequest)
+      self.clientConnection.send(pickle.dumps(fileRequestObj))
       
       serialObj = self.clientConnection.receive()
-      f = open(fileName, "w")
-      f.write(cPickle.loads(serialObj)[0]) 
+      fullfilledRequest = pickle.loads(serialObj)
+      if (fullfilledRequest[0] == fileName): #write the contents (i.e. the second item in the object array
+        f = open(fileName, "w")
+        f.write(fullfilledRequest[1]) 
+        print ("Client successfully received", fileName)
+      else:
+        print ("Client received", fullfilledRequest[0], "but was expecting", fileName)
       
     def postF(self, fileName):
       #Command:     post F (only for projects that support bi-directional transfers)
       #The FTA-client uploads file F to the server (if F exists in the same directory as the fta-client executable).
       f = open(fileName, 'r')
-      obj = [filename, f.read()]
-      serialObj = cPickle.dumps(obj)
-      self.clientConnection.send(serialObj)
+      obj = [fileName, f.read()]
+      self.clientConnection.send(pickle.dumps(obj))
       
       serialObj = self.clientConnection.receive()
-      serverReply = cPickle.loads(serialObj)
+      serverReply = pickle.loads(serialObj)
       if (serverReply[0] == filename and serverReply[1] == "confirmed"):
         print (filename + " was confirmed")
       else:
-        print (filename + " was not confirmed")
+        print (filename + " was not confirmed!")
     
     def terminate(self):
       #Command:     disconnect (only for projects that support bi-directional transfers)
@@ -60,7 +66,8 @@ if __name__ == "__main__":
   cApp = ClientApplication()
   #cApp.connect()
   cApp.connect(12000, '127.0.0.1', 12001)
-
+  
+  cApp.postF('file1')
   t = time.clock()
   while (time.clock() - t < 2): pass
   cApp.terminate()
