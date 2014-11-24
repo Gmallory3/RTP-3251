@@ -57,8 +57,8 @@ class ClientApplication(object):
       # add file confirmation
 if __name__ == "__main__":
   cApp = ClientApplication()
-  cApp.connect()
-
+  #cApp.connect()
+  cApp.connect(12000, '127.0.0.1', 12001)
 
   
         

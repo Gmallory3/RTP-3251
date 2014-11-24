@@ -42,9 +42,9 @@ class Connection():
 
 	# Receive stuff
 	def receive(self):
-		while(len(pacman.applicationBFR) == 0): pass
-		retVal = pacman.applicationBFR[0]
-		pacman.applicationBFR.pop(0)
+		while(len(PacketManager.applicationBFR) == 0): pass
+		retVal = PacketManager.applicationBFR[0]
+		PacketManager.applicationBFR.pop(0)
 		return retVal
 
 

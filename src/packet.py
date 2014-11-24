@@ -26,7 +26,7 @@ class Packet():
 
 
 class PacketManager():
-  
+    applicationBFR = []
     """
     Sets up a Packet Manager for one connection. 
     1. SourcePort and destinationPort are connection specific and are set with parameters
@@ -42,7 +42,6 @@ class PacketManager():
         self.acknowledgeNumber = 5678
         self.outgoingBFR = []
         self.tmpIncomingBFR = []
-        self.applicationBFR = []
         self.BUFFER_SIZE = self.window * 1024
         self.publicKey, self.privateKey = self.RSA()
         
