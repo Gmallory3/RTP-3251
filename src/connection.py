@@ -70,17 +70,19 @@ class Connection():
 					print ('send count exceeded 5')
 					print ('Handshake failure! Terminating connection')
 				return
+			exitwhile = False
 			while(time.clock() - self.pacman.outgoingBFR[0][1] < self.timeout):
 				try:
 					data, addr = sock.recvfrom(160)
+					if(addr == self.destaddr and data != None):
+						if(self._debug): print ('INCOMING', self.pacman.stringToPacket(data).ctrlBits)
+						if(self.pacman.stringToPacket(data).ctrlBits == 0xC):
+							self.pacman.outgoingBFR.pop(0)
+							exitwhile = True
+							break
 				except socket.timeout:
 					pass
-				
-				if(addr == self.destaddr and data != None):
-					if(self._debug): print ('INCOMING', self.pacman.stringToPacket(data).ctrlBits)
-					if(self.pacman.stringToPacket(data).ctrlBits == 0xC):
-						self.pacman.outgoingBFR.pop(0)
-						break
+				if(exitwhile): break
 
 		self.pacman.addOutgoing(ctrlBits=0x8)
 		sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
@@ -96,15 +98,18 @@ class Connection():
 		sock.bind(self.srcaddr)
 		self.pacman = PacketManager(-1, -1)
 		# listen 
+		exitwhile = False
 		while 1:
 			try:
 				data, addr = sock.recvfrom(160)
 				pkt = self.pacman.stringToPacket(data)
 				if((pkt.ctrlBits == 0x4)):
 					if(self._debug): print ('INCOMING', pkt.ctrlBits)
+					exitwhile = True
 					break
 			except socket.timeout:
 				pass
+			if(exitwhile): break
 
 		self.destaddr = addr
 
@@ -121,15 +126,18 @@ class Connection():
 					print ('send count exceeded 5')
 					print ('Handshake failure! Terminating connection')
 				return
+			exitwhile = False
 			while (time.clock() - self.pacman.outgoingBFR[0][1] < self.timeout):
 				try:
 					data, addr = sock.recvfrom(160)
 					if(addr == self.destaddr):
 						pkt = self.pacman.stringToPacket(data)
 						if(self._debug): print ('INCOMING', pkt.ctrlBits)
+						exitwhile = True
 						break
 				except socket.timeout:
 					pass
+				if(exitwhile): break
 		self.pacman.outgoingBFR.pop(0)
 		if(self._debug): print ('EST')
 		self.KeepAlive(sock)

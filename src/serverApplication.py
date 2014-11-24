@@ -8,12 +8,12 @@ from connection import Connection
 import cPickle
 
 
-class ServerApplication(object):
+class ServerApplication():
     '''  
     Used for testing the methods that will be available via the RTP-3251 API
     '''
 
-    def __init__(self, params):
+    def __init__(self):
       pass
     
     def openServer(self, portOfServer=12001):
