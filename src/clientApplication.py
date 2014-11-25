@@ -73,7 +73,7 @@ class ClientApplication(object):
 if __name__ == "__main__":
   cApp = ClientApplication()
   #cApp.connect(12000, '127.0.0.1', 12001)
-  cApp.connect(destIp="127.0.0.1")
+  cApp.connect(destIp= "128.61.52.247", destPort=8000)
   cApp.postF('file1')
   cApp.getF('file1AtServer')
   t = time.clock()
