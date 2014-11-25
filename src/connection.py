@@ -83,10 +83,13 @@ class Connection():
 			if(self._debug): print ('83 OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
 			self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
 			if(self.pacman.outgoingBFR[0][2] > 5):
-				if (self._debug):
-					print ('send count exceeded 5')
-					print ('Handshake failure! Terminating connection')
-				return
+				self.timeout+= 1
+				self.sockettimeout+=1
+				if(self.pacman.outgoingBFR[0][2] > 10):
+					if (self._debug):
+						print ('send count exceeded 10')
+						print ('Handshake failure! Terminating connection')
+					return
 			exitwhile = False
 			while(time.clock() - self.pacman.outgoingBFR[0][1] < self.timeout):
 				try:
@@ -141,10 +144,13 @@ class Connection():
 			if(self._debug): print ('141 OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
 			self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
 			if(self.pacman.outgoingBFR[0][2] > 5):
-				if (self._debug):
-					print ('send count exceeded 5')
-					print ('Handshake failure! Terminating connection')
-				return
+				self.timeout+= 1
+				self.sockettimeout+=1
+				if(self.pacman.outgoingBFR[0][2] > 10):
+					if (self._debug):
+						print ('send count exceeded 10')
+						print ('Handshake failure! Terminating connection')
+					return
 			exitwhile = False
 			while (time.clock() - self.pacman.outgoingBFR[0][1] < self.timeout):
 				try:
