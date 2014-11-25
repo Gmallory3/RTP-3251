@@ -49,10 +49,8 @@ class Connection():
 				if(q == (1, )): self.connEst = 1
 				else: self.queue[1].put(q)
 		if(not self.connEst):
-			if(self._debug): print ('Queue: Send Failure')
 			return
 		self.queue[0].put((2, obj))
-		if(self._debug): print ('Queue: Send Success')
 
 	# Receive stuff
 	def receive(self, timeout = 10):
@@ -169,7 +167,8 @@ class Connection():
 		q = None
 		queue[1].put((1, ))
 		while(1):
-			print len(self.pacman.outgoingBFR), [self.pacman.stringToPacket(i[0]).ctrlBits for i in self.pacman.outgoingBFR]
+			#print len(self.pacman.outgoingBFR), [self.pacman.stringToPacket(i[0]).ctrlBits for i in self.pacman.outgoingBFR]
+			#print "\t", [self.pacman.stringToPacket(i[0]).data for i in self.pacman.outgoingBFR]
 			#incoming parameters
 			if(not queue[0].empty()): 
 				q = queue[0].get()
@@ -207,9 +206,9 @@ class Connection():
 							return
 						continue
 					#server: client ack'd handshake, so pop 0xC
-					elif(self.pacman.stringToPacket(data).ctrlBits == 0x8):
-						if(self._debug): print ('INCOMING', self.pacman.stringToPacket(data).ctrlBits)
-						self.pacman.outgoingBFR.pop(0)
+					# elif(self.pacman.stringToPacket(data).ctrlBits == 0x8):
+					# 	if(self._debug): print ('INCOMING', self.pacman.stringToPacket(data).ctrlBits)
+					# 	self.pacman.addIncoming(data)
 					#FIN
 					elif(self.pacman.stringToPacket(data).ctrlBits == 0x2):
 						if(self._debug): print ('INCOMING FIN')
@@ -232,18 +231,18 @@ class Connection():
 				pass
 			finally:
 				#OUTGOING
-				pop = False
+				pop = []
 				if(len(self.pacman.outgoingBFR) > 0):
 					for i in range(0, len(self.pacman.outgoingBFR)):
 						if((self.pacman.outgoingBFR[i][1] == -1) or (time.clock() - self.pacman.outgoingBFR[i][1] > self.timeout)):
+							sock.sendto(self.pacman.outgoingBFR[i][0], self.destaddr)
 							#Client ACK still in outgoing buffer
 							if(self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).ctrlBits == 0x8):
-								self.pacman.outgoingBFR[i] = (self.pacman.outgoingBFR[i][0], time.clock(), self.pacman.outgoingBFR[i][2]+1)
-								if(self.pacman.outgoingBFR[i][2] > 5):
-									pop = True
-								continue
-							sock.sendto(self.pacman.outgoingBFR[i][0], self.destaddr)
+								pop.append(i)
 							if(self._debug): print ('OUTGOING')
 							self.pacman.outgoingBFR[i] = (self.pacman.outgoingBFR[i][0], time.clock(), self.pacman.outgoingBFR[i][2]+1)
-					if(pop):
-						self.pacman.outgoingBFR.pop(0)
+					if(len(pop) > 0):
+						pop.reverse()
+						for i in pop:
+							self.pacman.outgoingBFR.pop(i)
+						del pop[:]

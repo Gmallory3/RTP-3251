@@ -153,16 +153,19 @@ class PacketManager():
         #ack
         elif packet.ctrlBits == 0x8:
           #handshake reminants
-          for n,i in enumerate(self.outgoingBFR):
-            if self.stringToPacket(i[0][0]).ctrlBits == 0xC:
-              self.outgoingBFR.pop(n)
-              return
+          if(packet.acknowledgmentNumber == 0x0):
+            for n,i in enumerate(self.outgoingBFR):
+              if self.stringToPacket(i[0][0]).ctrlBits == 0xC:
+                self.outgoingBFR.pop(n)
+                break
+            return
           #remove from outgoingBFR
           remove = []
           for n,i in enumerate(self.outgoingBFR):
-            if(i[0].sequenceNumber == packet.acknowledgmentNumber):
+            if(self.stringToPacket(i[0]).sequenceNumber == packet.acknowledgmentNumber):
               remove.append(n)
-          for i in range(len(remove)-1, 0, -1):
+          remove.reverse()
+          for i in remove:
             self.outgoingBFR.pop(i)
           del remove[:]
         #data
@@ -182,7 +185,8 @@ class PacketManager():
                 remove.append(n)
             if(len(remove) == (c_idx[1]-c_idx[0]+1)):
               self.applicationBFR.append(''.join(tmpArr))
-              for i in range(len(remove)-1, 0, -1):
+              remove.reverse()
+              for i in remove:
                 self.tmpIncomingBFR.pop(i)
             del remove[:]
             del tmpArr[:]
