@@ -71,8 +71,8 @@ if __name__ == "__main__":
   cApp = ClientApplication()
   #cApp.connect(12000, '127.0.0.1', 12001)
   cApp.connect(destIp="127.0.0.1")
-  #cApp.postF('file1')
-  cApp.getF('fileResult')
+  cApp.postF('file1')
+  #cApp.getF('fileResult')
   t = time.clock()
   while (time.clock() - t < 2): pass
   cApp.terminate()

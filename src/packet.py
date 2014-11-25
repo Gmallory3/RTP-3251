@@ -66,18 +66,18 @@ class PacketManager():
  
       self.outgoingBFR.append((self.packetToString(pkt), -1, 0))
     
-    def addOutgoingFile(self, data):
-      for i in range(0, int(math.ceil(float(len(data))/(self.BUFFER_SIZE/self.window)))):
-        if(int(math.ceil(float(len(data))/(self.BUFFER_SIZE/self.window))) == 1):
-          self.addOutgoing(data=data,ctrlBits=0x1)
+    def addOutgoingFile(self, dataIn):
+      for i in range(0, int(math.ceil(float(len(dataIn))/(self.BUFFER_SIZE/self.window)))):
+        if(int(math.ceil(float(len(dataIn))/(self.BUFFER_SIZE/self.window))) == 1):
+          self.addOutgoing(data=dataIn,ctrlBits=0x1)
           self.addOutgoing(ctrlBits=0x1)
         else:
           if(i == 0):
-            self.addOutgoing(data=data[0:(self.BUFFER_SIZE/self.window)], ctrlBits=0x1)
-          elif (i == len(data)/math.ceil((self.BUFFER_SIZE/self.window))-1):
-            self.addOutgoing(data=data[i*(self.BUFFER_SIZE/self.window):], ctrlBits=0x1)
+            self.addOutgoing(data=dataIn[0:(self.BUFFER_SIZE/self.window)], ctrlBits=0x1)
+          elif (i == int(math.ceil(float(len(dataIn))/(self.BUFFER_SIZE/self.window)))-1):
+            self.addOutgoing(data=dataIn[i*(self.BUFFER_SIZE/self.window):], ctrlBits=0x1)
           else:
-            self.addOutgoing(data=data[(i*self.BUFFER_SIZE/self.window):(i+1)(self.BUFFER_SIZE/self.window)])
+            self.addOutgoing(data=dataIn[(i*self.BUFFER_SIZE/self.window):(i+1)*(self.BUFFER_SIZE/self.window)])
     
     """
     Changes a packet object to a hex string of the format '######...' and length 40 + data
@@ -131,7 +131,6 @@ class PacketManager():
           return
         #ack
         elif packet.ctrlBits == 0x8:
-          print("yolo")
           #handshake reminants
           if(packet.acknowledgmentNumber == 0x0):
             for n,i in enumerate(self.outgoingBFR):

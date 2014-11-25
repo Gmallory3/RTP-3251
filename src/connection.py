@@ -182,9 +182,9 @@ class Connection():
 		q = None
 		queue[1].put((1, ))
 		while(1):
-			print len(self.pacman.outgoingBFR), len(self.pacman.tmpIncomingBFR), len(self.pacman.applicationBFR), [self.pacman.stringToPacket(i[0]).ctrlBits for i in self.pacman.outgoingBFR]
+			#print len(self.pacman.outgoingBFR), len(self.pacman.tmpIncomingBFR), len(self.pacman.applicationBFR), [self.pacman.stringToPacket(i[0]).ctrlBits for i in self.pacman.outgoingBFR]
 			#print "\t", [self.pacman.stringToPacket(i[0]).data for i in self.pacman.outgoingBFR]
-			print "\t", [(i[0], i[2]) for i in self.pacman.tmpIncomingBFR]
+			#print "\t", [(i[0], i[2]) for i in self.pacman.tmpIncomingBFR]
 			#incoming parameters
 			if(not queue[0].empty()): 
 				q = queue[0].get()
@@ -197,7 +197,7 @@ class Connection():
 					if(self._debug): print ('OUTGOING FIN')
 					self.pacman.outgoingBFR[-1] = (self.pacman.outgoingBFR[-1][0], time.clock(), self.pacman.outgoingBFR[-1][2]+1)
 				elif(q[0] == 2):
-					self.pacman.addOutgoingFile(data=q[1])
+					self.pacman.addOutgoingFile(dataIn=q[1])
 			#outgoing parameters
 			if(len(self.pacman.applicationBFR) > 0):
 				queue[1].put(self.pacman.applicationBFR[0])
