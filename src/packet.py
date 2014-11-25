@@ -39,7 +39,6 @@ class PacketManager():
         self.window = 10
         
         self.sequenceNumber = 1234
-        self.acknowledgeNumber = 5678
         self.outgoingBFR = []
         self.applicationBFR = []
         self.tmpIncomingBFR = []
@@ -89,7 +88,6 @@ class PacketManager():
             self.addOutgoing(data=data[i*(self.BUFFER_SIZE/self.window):], ctrlBits=0x1)
           else:
             self.addOutgoing(data=data[(i*self.BUFFER_SIZE/self.window):(i+1)(self.BUFFER_SIZE/self.window)])
-    
     
     """
     Changes a packet object to a hex string of the format '######...' and length 40 + data
@@ -149,15 +147,11 @@ class PacketManager():
     def addIncoming(self, hexString):
       packet = self.stringToPacket(hexString)
       if packet.ctrlBits != 0xF: # Check validity
-        print "VALID?"
         #handshake ctrl flags
         if (packet.ctrlBits == 0xC or packet.ctrlBits == 0x4):
-          print "WHAT DA FUQ?"
           return
         #ack
         elif packet.ctrlBits == 0x8:
-          print "dealing with HANDSHAKES"
-          priu
           #handshake reminants
           for n,i in enumerate(self.outgoingBFR):
             if self.stringToPacket(i[0][0]).ctrlBits == 0xC:
@@ -174,7 +168,6 @@ class PacketManager():
         #data
         else:
           #Deal with data
-          print "DEALIN WITH DAT DATA"
           self.tmpIncomingBFR.append((packet.sequenceNumber, packet.data, packet.ctrlBits))
           c_idx = []
           for i in self.tmpIncomingBFR:
@@ -203,6 +196,9 @@ class PacketManager():
             seqNum = 0
             self.sequenceNumber = 0
           ackNum = packet.sequenceNumber
+          for i in self.outgoingBFR:
+            if(self.stringToPacket(i[0]).acknowledgmentNumber == ackNum):
+              return
           pkt = Packet(self.sourcePort, self.destinationPort, seqNum, ackNum, self.window, None, 0x8, '')
           pkt.checksum = self.checksum(pkt)
           

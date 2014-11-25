@@ -63,7 +63,6 @@ class Connection():
 				if(q == (1, )):
 					self.connEst = 1
 					continue
-				#print "RECV'D", type(q)
 				return q
 
 
@@ -230,6 +229,8 @@ class Connection():
 						if(self._debug): print ('INCOMING data')
 						self.pacman.addIncoming(data)
 			except socket.timeout:
+				pass
+			finally:
 				#OUTGOING
 				pop = False
 				if(len(self.pacman.outgoingBFR) > 0):

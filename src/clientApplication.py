@@ -32,28 +32,33 @@ class ClientApplication(object):
       fileRequestObj = ['FFFFFFFF', fileName]
       self.clientConnection.send(pickle.dumps(fileRequestObj))
       
-      serialObj = self.clientConnection.receive()
+      serialObj = None
+      while(serialObj == None):
+        serialObj = self.clientConnection.receive()
       fullfilledRequest = pickle.loads(serialObj)
-      if (fullfilledRequest[0] == fileName): #write the contents (i.e. the second item in the object array
+      if (fullfilledRequest[0] == fileName+"FromServer"): #write the contents (i.e. the second item in the object array
         f = open(fileName, "w")
         f.write(fullfilledRequest[1]) 
-        print ("Client successfully received", fileName)
+        print ("Client successfully received", fileName+"FromServer")
       else:
-        print ("Client received", fullfilledRequest[0], "but was expecting", fileName)
+        print ("Client received", fullfilledRequest[0], "but was expecting", fileName+"FromServer")
       
     def postF(self, fileName):
       #Command:     post F (only for projects that support bi-directional transfers)
       #The FTA-client uploads file F to the server (if F exists in the same directory as the fta-client executable).
       f = open(fileName, 'r')
-      obj = [fileName, f.read()]
+      obj = [fileName+"AtServer", f.read()]
       self.clientConnection.send(pickle.dumps(obj))
       
-      serialObj = self.clientConnection.receive()
+      serialObj = None
+      while(serialObj == None):
+        serialObj = self.clientConnection.receive()
+      
       serverReply = pickle.loads(serialObj)
-      if (serverReply[0] == filename and serverReply[1] == "confirmed"):
-        print (filename + " was confirmed")
+      if (serverReply[0] == fileName+"AtServer" and serverReply[1] == "confirmed"):
+        print (fileName + " was confirmed")
       else:
-        print (filename + " was not confirmed!")
+        print (fileName + " was not confirmed!")
     
     def terminate(self):
       #Command:     disconnect (only for projects that support bi-directional transfers)
@@ -64,10 +69,9 @@ class ClientApplication(object):
       # add file confirmation
 if __name__ == "__main__":
   cApp = ClientApplication()
-  cApp.connect()
   cApp.connect(12000, '127.0.0.1', 12001)
-  
-  cApp.postF('file1')
+  #cApp.postF('file1')
+  cApp.getF('fileResult')
   t = time.clock()
   while (time.clock() - t < 2): pass
   cApp.terminate()

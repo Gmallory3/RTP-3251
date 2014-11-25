@@ -25,12 +25,15 @@ class ServerApplication():
     
     def listen(self):
       while(1):
-        serialObj = self.serverConnection.receive() #stuck until receives a file read or write request
+        serialObj = None
+        while(serialObj == None):
+          serialObj = self.serverConnection.receive() #stuck until receives a file read or write request
+
         requestObj = pickle.loads(serialObj)
         if (requestObj[0] == "FFFFFFFF"): #client wants file
           self.replyF(requestObj[1])
         else: #client is posting file as ['filename', content]
-          f.open(requestObj[0],'w')
+          f = open(requestObj[0],'w')
           f.write(requestObj[1])
           fileConfirmation = [requestObj[0], 'confirmed']
           self.serverConnection.send(pickle.dumps(fileConfirmation))
@@ -39,7 +42,7 @@ class ServerApplication():
       #Command:     post F (only for projects that support bi-directional transfers)
       #The FTA-client uploads file F to the server (if F exists in the same directory as the fta-client executable).
       f = open(fileName, 'r')
-      obj = [fileName, f.read()]
+      obj = [fileName+"FromServer", f.read()]
       self.serverConnection.send(pickle.dumps(obj))
     
     def terminate(self):
