@@ -83,8 +83,9 @@ class Connection():
 			if(self._debug): print ('83 OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
 			self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
 			if(self.pacman.outgoingBFR[0][2] > 5):
-				self.timeout+= 1
-				self.sockettimeout+=1
+				self.timeout+=0.5
+				self.sockettimeout+=0.5
+				sock.settimeout(self.sockettimeout)
 				if(self.pacman.outgoingBFR[0][2] > 10):
 					if (self._debug):
 						print ('send count exceeded 10')
@@ -144,8 +145,9 @@ class Connection():
 			if(self._debug): print ('141 OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
 			self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
 			if(self.pacman.outgoingBFR[0][2] > 5):
-				self.timeout+= 1
-				self.sockettimeout+=1
+				self.timeout+= 0.5
+				self.sockettimeout+=0.5
+				sock.settimeout(self.sockettimeout)
 				if(self.pacman.outgoingBFR[0][2] > 10):
 					if (self._debug):
 						print ('send count exceeded 10')
@@ -180,8 +182,9 @@ class Connection():
 		q = None
 		queue[1].put((1, ))
 		while(1):
-			print len(self.pacman.outgoingBFR), [self.pacman.stringToPacket(i[0]).ctrlBits for i in self.pacman.outgoingBFR]
+			print len(self.pacman.outgoingBFR), len(self.pacman.tmpIncomingBFR), len(self.pacman.applicationBFR), [self.pacman.stringToPacket(i[0]).ctrlBits for i in self.pacman.outgoingBFR]
 			#print "\t", [self.pacman.stringToPacket(i[0]).data for i in self.pacman.outgoingBFR]
+			print "\t", [(i[0], i[2]) for i in self.pacman.tmpIncomingBFR]
 			#incoming parameters
 			if(not queue[0].empty()): 
 				q = queue[0].get()
@@ -204,7 +207,7 @@ class Connection():
 				#INCOMING
 				if(addr == self.destaddr):
 					# client: server didnt get 0x8
-					if((self.pacman.stringToPacket(data).ctrlBits == 0xC) and (self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits == 0x8)):
+					if((self.pacman.stringToPacket(data).ctrlBits == 0xC) and len(self.pacman.outgoingBFR) > 0 and (self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits == 0x8)):
 						if(self._debug): print ('INCOMING', self.pacman.stringToPacket(data).ctrlBits)
 						sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
 						if(self._debug): print ('204 OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
@@ -214,9 +217,14 @@ class Connection():
 							for i in range(1, len(self.pacman.outgoingBFR)):
 								self.pacman.outgoingBFR[i] = (self.pacman.outgoingBFR[i][0], time.clock(), 0)
 						if(self.pacman.outgoingBFR[0][2] > 5):
-							if (self._debug):
-								print ('Handshake failure! Terminating connection')
-							return
+							self.timeout+= 0.5
+							self.sockettimeout+=0.5
+							sock.settimeout(self.sockettimeout)
+							if(self.pacman.outgoingBFR[0][2] > 10):
+								if (self._debug):
+									print ('send count exceeded 10')
+									print ('Handshake failure! Terminating connection')
+								return
 						#continue
 					#server: client ack'd handshake, so pop 0xC
 					# elif(self.pacman.stringToPacket(data).ctrlBits == 0x8):

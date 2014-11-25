@@ -150,7 +150,15 @@ class PacketManager():
           del remove[:]
         else:
           #Deal with data
-          self.tmpIncomingBFR.append((packet.sequenceNumber, packet.data, packet.ctrlBits))
+
+          # discard duplicates
+          found = False
+          for i in self.tmpIncomingBFR:
+            if i[0] == packet.sequenceNumber:
+              found = True
+          if(not found):
+            self.tmpIncomingBFR.append((packet.sequenceNumber, packet.data, packet.ctrlBits))
+
           c_idx = []
           for i in self.tmpIncomingBFR:
             if i[2] == 0x1: c_idx.append(i[0])
