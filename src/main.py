@@ -51,11 +51,11 @@ def RSA():
           e = random.randrange(1, euler, 2)
           print("potential e",e)
           #if all(e % n != 0 for n in range(3, int(math.sqrt(e)) + 1, 2 )):
-          if all(e % num != 0 for num in range(3, e, 2 )):
+          if all(e % num != 0 for num in range(3, int(math.sqrt(e)) + 1, 2 )):
             # e is prime. now if e is not divisor of 3120, we're good.
             if (euler%e == 0):
               break
-          
+        print("e",e)
         # 5: Determine d =- e^-1 mod(euler) (I.e. solve d * e =- 1(mod(euler))
         d = modinv(e, euler)
         

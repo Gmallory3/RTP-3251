@@ -131,6 +131,7 @@ class PacketManager():
           return
         #ack
         elif packet.ctrlBits == 0x8:
+          print("yolo")
           #handshake reminants
           if(packet.acknowledgmentNumber == 0x0):
             for n,i in enumerate(self.outgoingBFR):

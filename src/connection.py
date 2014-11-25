@@ -80,7 +80,7 @@ class Connection():
 		self.pacman.addOutgoing(ctrlBits=0x4)
 		while(len(self.pacman.outgoingBFR) > 0):
 			sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
-			if(self._debug): print ('OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
+			if(self._debug): print ('83 OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
 			self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
 			if(self.pacman.outgoingBFR[0][2] > 5):
 				if (self._debug):
@@ -103,7 +103,7 @@ class Connection():
 
 		self.pacman.addOutgoing(ctrlBits=0x8)
 		sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
-		if(self._debug): print ('OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
+		if(self._debug): print ('106 OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
 		self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
 		self.KeepAlive(sock, queue)
 		return
@@ -138,7 +138,7 @@ class Connection():
 		while(pkt.ctrlBits != 0x8):
 			self.pacman.addOutgoing(ctrlBits=0xC)
 			sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
-			if(self._debug): print ('OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
+			if(self._debug): print ('141 OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
 			self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
 			if(self.pacman.outgoingBFR[0][2] > 5):
 				if (self._debug):
@@ -201,7 +201,7 @@ class Connection():
 					if((self.pacman.stringToPacket(data).ctrlBits == 0xC) and (self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits == 0x8)):
 						if(self._debug): print ('INCOMING', self.pacman.stringToPacket(data).ctrlBits)
 						sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
-						if(self._debug): print ('OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
+						if(self._debug): print ('204 OUTGOING', self.pacman.stringToPacket(self.pacman.outgoingBFR[0][0]).ctrlBits)
 						self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
 						# reset counts to 0
 						if(len(self.pacman.outgoingBFR) > 1):
@@ -224,7 +224,7 @@ class Connection():
 						while(self.pacman.outgoingBFR[0][2] < 5):
 							if((self.pacman.outgoingBFR[0][1] == -1) or (time.clock() - self.pacman.outgoingBFR[0][1] > self.timeout)):
 								sock.sendto(self.pacman.outgoingBFR[0][0], self.destaddr)
-								if(self._debug): print ('OUTGOING FIN ACK')
+								if(self._debug): print ('227 OUTGOING FIN ACK')
 								self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
 						return
 					elif(self.pacman.stringToPacket(data).ctrlBits == 0xA):
@@ -243,6 +243,9 @@ class Connection():
 					for i in range(0, len(self.pacman.outgoingBFR)):
 						if((self.pacman.outgoingBFR[i][1] == -1) or (time.clock() - self.pacman.outgoingBFR[i][1] > self.timeout)):
 							sock.sendto(self.pacman.outgoingBFR[i][0], self.destaddr)
+# 							print("print at 246",self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).ctrlBits)
+# 							print("print at 246",self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).acknowledgmentNumber)
+							
 							#Client ACK still in outgoing buffer
 							if (self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).ctrlBits == 0x8 and self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).acknowledgmentNumber == 0):
 									self.pacman.outgoingBFR[i] = (self.pacman.outgoingBFR[i][0], time.clock(), self.pacman.outgoingBFR[i][2]+1)
@@ -250,7 +253,7 @@ class Connection():
 										remove.append(i)
 							elif(self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).ctrlBits == 0x8):
 								remove.append(i)
-							if(self._debug): print ('OUTGOING')
+# 							if(self._debug): print ('253 OUTGOING')
 							self.pacman.outgoingBFR[i] = (self.pacman.outgoingBFR[i][0], time.clock(), self.pacman.outgoingBFR[i][2]+1)
 					if(len(remove) > 0):
 						remove.reverse()
