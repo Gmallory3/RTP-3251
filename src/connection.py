@@ -217,7 +217,7 @@ class Connection():
 							if (self._debug):
 								print ('Handshake failure! Terminating connection')
 							return
-						continue
+						#continue
 					#server: client ack'd handshake, so pop 0xC
 					# elif(self.pacman.stringToPacket(data).ctrlBits == 0x8):
 					# 	if(self._debug): print ('INCOMING', self.pacman.stringToPacket(data).ctrlBits)
