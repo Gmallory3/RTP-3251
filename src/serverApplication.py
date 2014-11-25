@@ -47,8 +47,6 @@ class ServerApplication():
       self.serverConnection.terminate()
         
 if __name__ == "__main__":
-  print (pickle.dumps("this"))
-#   serverApp = ServerApplication()
-#   serverApp.openServer()
-#   serverApp.listen()
-  pass
+  serverApp = ServerApplication()
+  serverApp.openServer()
+  serverApp.listen()
