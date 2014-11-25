@@ -157,7 +157,14 @@ class Connection():
 				except socket.timeout:
 					pass
 				if(exitwhile): break
-		self.pacman.outgoingBFR.pop(0)
+		remove = []
+		for n,i in enumerate(self.pacman.outgoingBFR):
+			if(self.pacman.stringToPacket(i[0]).ctrlBits == 0xc):
+				remove.append(n)
+		remove.reverse()
+		for i in remove:
+			self.pacman.outgoingBFR.pop(i)
+		del remove[:]
 		if(self._debug): print ('EST')
 		self.KeepAlive(sock, queue)
 		return
@@ -167,7 +174,7 @@ class Connection():
 		q = None
 		queue[1].put((1, ))
 		while(1):
-			#print len(self.pacman.outgoingBFR), [self.pacman.stringToPacket(i[0]).ctrlBits for i in self.pacman.outgoingBFR]
+			print len(self.pacman.outgoingBFR), [self.pacman.stringToPacket(i[0]).ctrlBits for i in self.pacman.outgoingBFR]
 			#print "\t", [self.pacman.stringToPacket(i[0]).data for i in self.pacman.outgoingBFR]
 			#incoming parameters
 			if(not queue[0].empty()): 
@@ -231,18 +238,22 @@ class Connection():
 				pass
 			finally:
 				#OUTGOING
-				pop = []
+				remove = []
 				if(len(self.pacman.outgoingBFR) > 0):
 					for i in range(0, len(self.pacman.outgoingBFR)):
 						if((self.pacman.outgoingBFR[i][1] == -1) or (time.clock() - self.pacman.outgoingBFR[i][1] > self.timeout)):
 							sock.sendto(self.pacman.outgoingBFR[i][0], self.destaddr)
 							#Client ACK still in outgoing buffer
-							if(self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).ctrlBits == 0x8):
-								pop.append(i)
+							if (self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).ctrlBits == 0x8 and self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).acknowledgmentNumber == 0):
+									self.pacman.outgoingBFR[i] = (self.pacman.outgoingBFR[i][0], time.clock(), self.pacman.outgoingBFR[i][2]+1)
+									if (self.pacman.outgoingBFR[i][2] > 5):
+										remove.append(i)
+							elif(self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).ctrlBits == 0x8):
+								remove.append(i)
 							if(self._debug): print ('OUTGOING')
 							self.pacman.outgoingBFR[i] = (self.pacman.outgoingBFR[i][0], time.clock(), self.pacman.outgoingBFR[i][2]+1)
-					if(len(pop) > 0):
-						pop.reverse()
-						for i in pop:
+					if(len(remove) > 0):
+						remove.reverse()
+						for i in remove:
 							self.pacman.outgoingBFR.pop(i)
-						del pop[:]
+						del remove[:]

@@ -49,21 +49,22 @@ def RSA():
 #           e = 17
 #           break
           e = random.randrange(1, euler, 2)
-          if all(e % n != 0 for n in range(3, int(math.sqrt(e)) + 1, 2 )):
+          print("potential e",e)
+          #if all(e % n != 0 for n in range(3, int(math.sqrt(e)) + 1, 2 )):
+          if all(e % num != 0 for num in range(3, e, 2 )):
             # e is prime. now if e is not divisor of 3120, we're good.
             if (euler%e == 0):
               break
           
-        
         # 5: Determine d =- e^-1 mod(euler) (I.e. solve d * e =- 1(mod(euler))
         d = modinv(e, euler)
         
         publicKey = (n, e)
         privateKey = (n, d)
-        print ("n: " + str(n))
-        print ("euler: " + str(euler))
-        print ("e: " + str(e))
-        print ("d: " + str(d))
+        print ("final n: ", n)
+        print ("final euler: ", euler)
+        print ("final e: " , e)
+        print ("final d: " , d)
         
         return publicKey, privateKey
     
@@ -73,6 +74,7 @@ NOTE: THE FOLLOWING TWO METHODS (egcd, modinv) ARE FROM https://stackoverflow.co
 AND ARE SUBJECT TO REVIEW
 """
 ####
+
 def egcd(a, b):
     if a == 0:
         return (b, 0, 1)
@@ -86,13 +88,14 @@ def modinv(a, m):
         raise Exception('modular inverse does not exist')
     else:
         return x % m
-
   
   
  
 if __name__ == '__main__':
-  #RSA()
-  print (17*2753%3120)
+  RSA()
+  #print ('d', modinv(17,3120))
+  
+  
   
    
   

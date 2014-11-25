@@ -63,17 +63,7 @@ class PacketManager():
       #data = self.encrypt(data, self.publicKey)
       pkt = Packet(self.sourcePort, self.destinationPort, seqNum, 0, self.window, None, ctrlBits, data)
       pkt.checksum = self.checksum(pkt)
-      """
-      print("src port: " + str(pkt.sourcePort))
-      print("dest port: " + str(pkt.destinationPort))
-      print("seq num: " + str(pkt.sequenceNumber))
-      print("ack num: "+ str(pkt.acknowledgmentNumber))
-      print("window: " + str(pkt.window))
-      print("chk sum: "+ str(pkt.checksum))
-      print("ctrl bits: " + str(pkt.ctrlBits))
-      print("data: " + str(pkt.data))
-      """
-
+ 
       self.outgoingBFR.append((self.packetToString(pkt), -1, 0))
     
     def addOutgoingFile(self, data):
@@ -122,18 +112,7 @@ class PacketManager():
     
       pkt = Packet(sourcePort, destinationPort, sequenceNumber, acknowledgmentNumber, 
                  window, checksum, ctrlBits, data)
-      
-      """
-      print("src port: " + str(pkt.sourcePort))
-      print("dest port: " + str(pkt.destinationPort))
-      print("seq num: " + str(pkt.sequenceNumber))
-      print("ack num: "+ str(pkt.acknowledgmentNumber))
-      print("window: " + str(pkt.window))
-      print("chk sum: "+ str(pkt.checksum))
-      print("ctrl bits: " + str(pkt.ctrlBits))
-      print("data: " + str(pkt.data))
-      """
-      
+          
       if (pkt.checksum == self.checksum(pkt)):
         #pkt.data = self.decrypt(pkt.data, self.privateKey)
         return pkt
@@ -155,7 +134,7 @@ class PacketManager():
           #handshake reminants
           if(packet.acknowledgmentNumber == 0x0):
             for n,i in enumerate(self.outgoingBFR):
-              if self.stringToPacket(i[0][0]).ctrlBits == 0xC:
+              if self.stringToPacket(i[0]).ctrlBits == 0xC:
                 self.outgoingBFR.pop(n)
                 break
             return
@@ -168,7 +147,6 @@ class PacketManager():
           for i in remove:
             self.outgoingBFR.pop(i)
           del remove[:]
-        #data
         else:
           #Deal with data
           self.tmpIncomingBFR.append((packet.sequenceNumber, packet.data, packet.ctrlBits))

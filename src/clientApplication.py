@@ -69,7 +69,8 @@ class ClientApplication(object):
       # add file confirmation
 if __name__ == "__main__":
   cApp = ClientApplication()
-  cApp.connect(12000, '127.0.0.1', 12001)
+  #cApp.connect(12000, '127.0.0.1', 12001)
+  cApp.connect(destIp="127.0.0.1")
   #cApp.postF('file1')
   cApp.getF('fileResult')
   t = time.clock()
