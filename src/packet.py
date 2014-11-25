@@ -53,7 +53,6 @@ class PacketManager():
     """
     def addOutgoing(self, ctrlBits=0x0, data=""):
       # set default values for checksum
-      
       seqNum = self.sequenceNumber
       #increment sequence number until you need to wrap around to 0
       if (self.sequenceNumber < 2**16-1):
@@ -75,21 +74,21 @@ class PacketManager():
       print("ctrl bits: " + str(pkt.ctrlBits))
       print("data: " + str(pkt.data))
       """
-      
+
       self.outgoingBFR.append((self.packetToString(pkt), -1, 0))
     
     def addOutgoingFile(self, data):
-      for i in range(0, len(data)/int(math.ceil((self.BUFFER_SIZE/self.window)))):
-        if(len(data)/math.ceil((self.BUFFER_SIZE/self.window)) == 1):
-         self.addOutgoing(data=data,ctrlBits=0x1)
-         self.addOutgoing(ctrlBits=0x1)
+      for i in range(0, int(math.ceil(float(len(data))/(self.BUFFER_SIZE/self.window)))):
+        if(int(math.ceil(float(len(data))/(self.BUFFER_SIZE/self.window))) == 1):
+          self.addOutgoing(data=data,ctrlBits=0x1)
+          self.addOutgoing(ctrlBits=0x1)
         else:
-         if(i == 0):
-           self.addOutgoing(data=data[0:(self.BUFFER_SIZE/self.window)], ctrlBits=0x1)
-         elif (i == len(data)/math.ceil((self.BUFFER_SIZE/self.window))-1):
-           self.addOutgoing(data=data[i*(self.BUFFER_SIZE/self.window):], ctrlBits=0x1)
-         else:
-           self.addOutgoing(data=data[(i*self.BUFFER_SIZE/self.window):(i+1)(self.BUFFER_SIZE/self.window)])
+          if(i == 0):
+            self.addOutgoing(data=data[0:(self.BUFFER_SIZE/self.window)], ctrlBits=0x1)
+          elif (i == len(data)/math.ceil((self.BUFFER_SIZE/self.window))-1):
+            self.addOutgoing(data=data[i*(self.BUFFER_SIZE/self.window):], ctrlBits=0x1)
+          else:
+            self.addOutgoing(data=data[(i*self.BUFFER_SIZE/self.window):(i+1)(self.BUFFER_SIZE/self.window)])
     
     
     """
@@ -149,20 +148,24 @@ class PacketManager():
     """
     def addIncoming(self, hexString):
       packet = self.stringToPacket(hexString)
-      if packet.ctrlBits == 0xF: # Check validity
+      if packet.ctrlBits != 0xF: # Check validity
+        print "VALID?"
         #handshake ctrl flags
-        if (packet.ctrlBits == 0xC or packet.ctrlBit == 0x4):
+        if (packet.ctrlBits == 0xC or packet.ctrlBits == 0x4):
+          print "WHAT DA FUQ?"
           return
         #ack
         elif packet.ctrlBits == 0x8:
+          print "dealing with HANDSHAKES"
+          priu
           #handshake reminants
-          for i,n in enumerate(self.outgoingBFR):
+          for n,i in enumerate(self.outgoingBFR):
             if self.stringToPacket(i[0][0]).ctrlBits == 0xC:
               self.outgoingBFR.pop(n)
               return
           #remove from outgoingBFR
           remove = []
-          for i,n in enumerate(self.outgoingBFR):
+          for n,i in enumerate(self.outgoingBFR):
             if(i[0].sequenceNumber == packet.acknowledgmentNumber):
               remove.append(n)
           for i in range(len(remove)-1, 0, -1):
@@ -171,22 +174,23 @@ class PacketManager():
         #data
         else:
           #Deal with data
-          tmpIncomingBFR.append((packet.sequenceNumber, packet.data, packet.ctrlBits))
+          print "DEALIN WITH DAT DATA"
+          self.tmpIncomingBFR.append((packet.sequenceNumber, packet.data, packet.ctrlBits))
           c_idx = []
-          for i in tmpIncomingBFR:
+          for i in self.tmpIncomingBFR:
             if i[2] == 0x1: c_idx.append(i[0])
           if(len(c_idx) == 2):
             c_idx.sort()
             tmpArr = [None]*(c_idx[1] - c_idx[0] + 1)
             remove = []
-            for i,n in enumerate(tmpIncomingBFR):
+            for n,i in enumerate(self.tmpIncomingBFR):
               if((i[0] >= c_idx[0]) and (i[0] <= c_idx[1])):
                 tmpArr[i[0]-c_idx[0]] = i[1]
                 remove.append(n)
             if(len(remove) == (c_idx[1]-c_idx[0]+1)):
               self.applicationBFR.append(''.join(tmpArr))
-              for i in remove:
-                tmpIncomingBFR.pop(i)
+              for i in range(len(remove)-1, 0, -1):
+                self.tmpIncomingBFR.pop(i)
             del remove[:]
             del tmpArr[:]
 

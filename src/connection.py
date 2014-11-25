@@ -18,6 +18,7 @@ class Connection():
 		self.pacman = PacketManager(-1,-1)
 		self.connType = None # 0 client 1 server
 		self.queue = (Queue(), Queue()) # (in2KA, out2KA)
+		self.connEst = False
 
 	# Generic open connection
 	def open(self, port, addr=('',12000), timeout=1):
@@ -40,8 +41,18 @@ class Connection():
 			return
 
 	# Send stuff
-	def send(self, obj):
+	def send(self, obj, timeout=10):
+		t = time.clock()
+		while(not self.connEst and time.clock()-t < timeout):
+			if(not self.queue[1].empty()):
+				q = self.queue[1].get()
+				if(q == (1, )): self.connEst = 1
+				else: self.queue[1].put(q)
+		if(not self.connEst):
+			if(self._debug): print ('Queue: Send Failure')
+			return
 		self.queue[0].put((2, obj))
+		if(self._debug): print ('Queue: Send Success')
 
 	# Receive stuff
 	def receive(self, timeout = 10):
@@ -49,8 +60,12 @@ class Connection():
 		while(time.clock() - t < timeout): 
 			if(not self.queue[1].empty()):
 				q = self.queue[1].get()
+				if(q == (1, )):
+					self.connEst = 1
+					continue
 				#print "RECV'D", type(q)
 				return q
+
 
 	# End connection
 	def terminate(self):
@@ -153,10 +168,14 @@ class Connection():
 	# SERVER & CLIENT KEEPALIVE
 	def KeepAlive(self, sock, queue):
 		q = None
+		queue[1].put((1, ))
 		while(1):
+			print len(self.pacman.outgoingBFR), [self.pacman.stringToPacket(i[0]).ctrlBits for i in self.pacman.outgoingBFR]
 			#incoming parameters
-			if(not queue[0].empty()): q = queue[0].get()
-			else: q = None
+			if(not queue[0].empty()): 
+				q = queue[0].get()
+			else: 
+				q = None
 			if(q != None and type(q) == tuple):
 				if(q[0] == 1):
 					self.pacman.addOutgoing(ctrlBits=0x2)
