@@ -198,7 +198,7 @@ class Connection():
 						self.pacman.outgoingBFR[0] = (self.pacman.outgoingBFR[0][0], time.clock(), self.pacman.outgoingBFR[0][2]+1)
 						# reset counts to 0
 						if(len(self.pacman.outgoingBFR) > 1):
-							for i in range(1, len(self.pacman.outgoingBFR)+1):
+							for i in range(1, len(self.pacman.outgoingBFR)):
 								self.pacman.outgoingBFR[i] = (self.pacman.outgoingBFR[i][0], time.clock(), 0)
 						if(self.pacman.outgoingBFR[0][2] > 5):
 							if (self._debug):
