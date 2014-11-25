@@ -35,6 +35,7 @@ class ServerApplication():
         else: #client is posting file as ['filename', content]
           f = open(requestObj[0],'w')
           f.write(requestObj[1])
+          f.close()
           fileConfirmation = [requestObj[0], 'confirmed']
           self.serverConnection.send(pickle.dumps(fileConfirmation))
       
@@ -43,7 +44,9 @@ class ServerApplication():
       #The FTA-client uploads file F to the server (if F exists in the same directory as the fta-client executable).
       f = open(fileName, 'r')
       obj = [fileName+"FromServer", f.read()]
+      f.close()
       self.serverConnection.send(pickle.dumps(obj))
+      
     
     def terminate(self):
       #Shuts down FTA-Server gracefully

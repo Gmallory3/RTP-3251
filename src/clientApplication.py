@@ -37,8 +37,9 @@ class ClientApplication(object):
         serialObj = self.clientConnection.receive()
       fullfilledRequest = pickle.loads(serialObj)
       if (fullfilledRequest[0] == fileName+"FromServer"): #write the contents (i.e. the second item in the object array
-        f = open(fileName, "w")
+        f = open(fileName+"FromServer", "w")
         f.write(fullfilledRequest[1]) 
+        f.close()
         print ("Client successfully received", fileName+"FromServer")
       else:
         print ("Client received", fullfilledRequest[0], "but was expecting", fileName+"FromServer")
@@ -48,6 +49,7 @@ class ClientApplication(object):
       #The FTA-client uploads file F to the server (if F exists in the same directory as the fta-client executable).
       f = open(fileName, 'r')
       obj = [fileName+"AtServer", f.read()]
+      f.close()
       self.clientConnection.send(pickle.dumps(obj))
       
       serialObj = None
@@ -55,6 +57,7 @@ class ClientApplication(object):
         serialObj = self.clientConnection.receive()
       
       serverReply = pickle.loads(serialObj)
+
       if (serverReply[0] == fileName+"AtServer" and serverReply[1] == "confirmed"):
         print (fileName + " was confirmed")
       else:
@@ -72,7 +75,7 @@ if __name__ == "__main__":
   #cApp.connect(12000, '127.0.0.1', 12001)
   cApp.connect(destIp="127.0.0.1")
   cApp.postF('file1')
-  #cApp.getF('fileResult')
+  cApp.getF('file1AtServer')
   t = time.clock()
   while (time.clock() - t < 2): pass
   cApp.terminate()

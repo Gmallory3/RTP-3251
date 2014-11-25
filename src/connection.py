@@ -254,6 +254,7 @@ class Connection():
 				#OUTGOING
 				remove = []
 				if(len(self.pacman.outgoingBFR) > 0):
+					win = min(len(self.pacman.outgoingBFR), self.pacman.window)
 					for i in range(0, len(self.pacman.outgoingBFR)):
 						if((self.pacman.outgoingBFR[i][1] == -1) or (time.clock() - self.pacman.outgoingBFR[i][1] > self.timeout)):
 							sock.sendto(self.pacman.outgoingBFR[i][0], self.destaddr)

@@ -37,8 +37,8 @@ class PacketManager():
         self.sourcePort = sourcePort
         self.destinationPort = destinationPort
         self.window = 10
-        
         self.sequenceNumber = 1234
+        self.acknowledgmentNumbers = [1233]
         self.outgoingBFR = []
         self.applicationBFR = []
         self.tmpIncomingBFR = []
@@ -60,7 +60,8 @@ class PacketManager():
         seqNum = 0
         self.sequenceNumber = 0
       
-      #data = self.encrypt(data, self.publicKey)
+      data = self.encrypt(data, self.publicKey)
+      #print data
       pkt = Packet(self.sourcePort, self.destinationPort, seqNum, 0, self.window, None, ctrlBits, data)
       pkt.checksum = self.checksum(pkt)
  
@@ -114,7 +115,8 @@ class PacketManager():
                  window, checksum, ctrlBits, data)
           
       if (pkt.checksum == self.checksum(pkt)):
-        #pkt.data = self.decrypt(pkt.data, self.privateKey)
+        pkt.data = self.decrypt(pkt.data, self.privateKey)
+        #print pkt.data
         return pkt
       else: 
         pkt.ctrlBits = 0xF
@@ -149,12 +151,23 @@ class PacketManager():
           del remove[:]
         else:
           #Deal with data
-
           # discard duplicates
           found = False
           for i in self.tmpIncomingBFR:
             if i[0] == packet.sequenceNumber:
               found = True
+          
+          if(packet.sequenceNumber < self.acknowledgmentNumbers[0]):
+            found = True
+          elif(packet.sequenceNumber in self.acknowledgmentNumbers):
+            found = True
+          else:
+            self.acknowledgmentNumbers.append(packet.sequenceNumber)
+            self.acknowledgmentNumbers.sort()
+            if(len(self.acknowledgmentNumbers) > 1):
+              while((len(self.acknowledgmentNumbers) > 1) and (self.acknowledgmentNumbers[1]-self.acknowledgmentNumbers[0] == 1)):
+                self.acknowledgmentNumbers.pop(0)
+
           if(not found):
             self.tmpIncomingBFR.append((packet.sequenceNumber, packet.data, packet.ctrlBits))
 
@@ -189,6 +202,7 @@ class PacketManager():
           for i in self.outgoingBFR:
             if(self.stringToPacket(i[0]).acknowledgmentNumber == ackNum):
               return
+
           pkt = Packet(self.sourcePort, self.destinationPort, seqNum, ackNum, self.window, None, 0x8, '')
           pkt.checksum = self.checksum(pkt)
           
@@ -255,20 +269,17 @@ class PacketManager():
     https://en.wikipedia.org/wiki/RSA_(cryptosystem)
     """
     def RSA(self):
-        #allows for seeding RSA with known values for testing if values supplied.
-        if (True):
-            p = 61
-            q = 53
-        else:
-            # 1: Calculate 2 large, random primes
-            while True:
-                p = random.randrange(1000000, 999999999, 2)
-                if all(p % n != 0 for n in range(3, int((math.sqrt(p) + 1), 2))):
-                    break
-            while True:
-                q = random.randrange(1000000, 999999999, 2)
-                if all(q % n != 0 for n in range(3, int((math.sqrt(q) + 1), 2))):
-                    break
+        # 1: Calculate 2 large, random primes
+        while True:
+            p = random.randrange(1000000, 999999999, 2)
+            if all(p % n != 0 for n in range(3, int((math.sqrt(p)) + 1), 2)):
+                p = 61
+                break
+        while True:
+            q = random.randrange(1000000, 999999999, 2)
+            if all(q % n != 0 for n in range(3, int((math.sqrt(q)) + 1), 2)):
+                q = 53
+                break
         
         # 2: Compute n = p*q
         n = p*q
