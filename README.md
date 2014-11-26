@@ -3,62 +3,23 @@ RTP-3251
 
 Networking protocol
 
+Current Status:
+i) I can run files like tester1.py (in src/client) using eclipse but not in command line. 
+b) I followed tutorials such as the following to set up the __init__ files in src, src/client and src/server:
 
-Test commmit from host
+	https://docs.python.org/2/tutorial/modules.html#packages
+	https://stackoverflow.com/questions/448271/what-is-init-py-for
+	
+3) Currently, the RTP-3251 and src are both set as source directories, so be aware of that. 
+4) If for some reason this directory doesn't work out, just move all files back to src and run.
 
+==============
+Run instructions:
 
-Notes on checksum:
-"""
-      BELOW is place holder code to enable us to move forward with a checksum. 
-      It is necessary to come back and code this ourselves for full credit for checksum
-      https://docs.python.org/2/library/hashlib.html
-      
-      hashableMaterial = str(packet.sourcePort) + str(packet.destinationPort) + str(packet.sequenceNumber)\
-        + str(packet.acknowledgmentNumber) + str(packet.window) + str(packet.ctrlBits) + str(packet.data)
-      
-      sum = hashlib.md5()
-      sum.update(hashableMaterial)
-      sum.digest()
-      print ("sum:")
-      print (sum)
-      print ("digest")
-      print (sum.digest)
-      print ("m digest size: ")
-      print (sum.digest_size)
-      print ("m block size: ")
-      #print ( sum.blocksize)
-      self.checksum = sum
-      return sum
-      """
-      """
-      >>> 
-      >>> m = hashlib.md5()
-      >>> m.update("Nobody inspects")
-      >>> m.update(" the spammish repetition")
-      >>> m.digest()
-      '\xbbd\x9c\x83\xdd\x1e\xa5\xc9\xd9\xde\xc9\xa1\x8d\xf0\xff\xe9'
-      >>> m.digest_size
-      16
-      >>> m.block_size
-      64
-      """
-
-            
-  """   
-  API COMMANDS:
-  
-      FTA SERVER
-Command-line:   fta-server X A P
-The command-line arguments are: 
-X: the port number at which the fta-server’s UDP socket should bind to (odd number)
-A: the IP address of NetEmu
-P: the UDP port number of NetEmu
-
-      FTA CLIENT
-Command-line:   fta-client X A P
-The command-line arguments are:
-X: the port number at which the fta-client’s UDP socket should bind to (even number). Please remember that this port number should be equal to the server’s port number minus 1.
-A: the IP address of NetEmu
-P: the UDP port number of NetEmu
-
-  """
+1. Run NetEmu as specified in the ReadMe.txt given with the emulator. (i.e. NetEmu 8000 -options)
+2. Run "python serverApplication.py" in the directory with the server application. This file is set up to run with python 2.7
+3. Run "python clientApplication.py" in the diector with the client application. This file also uses 2.7.
+4. To add more files, simply create the files in the directories with the respective application. Change the client application's main method
+	to use the method "postF" and "getF" to interacte with these files.
+	
+	

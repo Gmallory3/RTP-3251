@@ -3,8 +3,10 @@ Created on Nov 17, 2014
 
 @author: Garrett
 '''
+from os import path
 
 from connection import Connection
+from client.tester1 import finishTime
 try:
    import cPickle as pickle
 except:
@@ -38,6 +40,7 @@ class ClientApplication(object):
       fullfilledRequest = pickle.loads(serialObj)
       if (fullfilledRequest[0] == fileName+"FromServer"): #write the contents (i.e. the second item in the object array
         f = open(fileName+"FromServer", "w")
+#         file_path = path.relpath("clientFiles/"+fileName)
         f.write(fullfilledRequest[1]) 
         f.close()
         print ("Client successfully received", fileName+"FromServer")
@@ -67,18 +70,21 @@ class ClientApplication(object):
       #Command:     disconnect (only for projects that support bi-directional transfers)
       #The FTA-client terminates gracefully from the FTA-server. 
       self.clientConnection.terminate()
+
       
-      
-      # add file confirmation
+      # add file csonfirmation
 if __name__ == "__main__":
+  startTime = time.clock()
   cApp = ClientApplication()
-  #cApp.connect(12000, '127.0.0.1', 12001)
-  cApp.connect(destIp= "128.61.52.247", destPort=8000)
-  cApp.postF('file1')
-  cApp.getF('file1AtServer')
+  cApp.connect(12000, '127.0.0.1', 12001)
+  #cApp.connect(destIp= "128.61.52.247", destPort=8000)
+  cApp.postF('flientFile1')
+  cApp.getF('serverFile1')
   t = time.clock()
   while (time.clock() - t < 2): pass
   cApp.terminate()
+  finishTime = time.clock()
+  print("Time change:", finishTime - startTime)
 
   
         
