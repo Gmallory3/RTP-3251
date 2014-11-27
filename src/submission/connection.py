@@ -1,8 +1,8 @@
 # Manage connection
-# @author aashish9patel
-# @version 0.20
+# @author aashish9patel, gmallory
+# @version 0.51
 
-import socket, time
+import socket, time, sys
 from packet import Packet
 from packet import PacketManager
 from multiprocessing import Process, Queue
@@ -260,7 +260,7 @@ class Connection():
 							sock.sendto(self.pacman.outgoingBFR[i][0], self.destaddr)
 # 							print("print at 246",self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).ctrlBits)
 # 							print("print at 246",self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).acknowledgmentNumber)
-							
+
 							#Client ACK still in outgoing buffer
 							if (self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).ctrlBits == 0x8 and self.pacman.stringToPacket(self.pacman.outgoingBFR[i][0]).acknowledgmentNumber == 0):
 									self.pacman.outgoingBFR[i] = (self.pacman.outgoingBFR[i][0], time.clock(), self.pacman.outgoingBFR[i][2]+1)
